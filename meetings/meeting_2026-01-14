@@ -1,0 +1,44 @@
+# Development Meeting Summary
+
+**Date:** 14 January 2026  
+**Location / Platform:** Main Library  
+
+## 1. Technical Decisions
+- Data ingestion format: RSS
+- Programming language: Python
+- Database: SQL-based relational database
+
+## 2. Data Sources Identified
+
+### Movies
+- Subtitles collected from OpenSubtitles
+- Focus on extracting and processing subtitle text
+
+### Social Media
+- YouTube (general content and metadata)
+
+### News
+- Online newspapers and blogs
+- YouTube news channels included as news sources
+
+### Software Documentation
+- README files of software applications
+- Google Play Store and Apple App Store descriptions
+
+## 3. Objectives for This Week
+- Verify that the end-to-end pipeline functions correctly
+  - Data collection
+  - Text extraction
+  - Storage in the database
+- Build a minimal working example demonstrating:
+  - Successful text collection
+  - Correct parsing and storage
+
+## 4. Immediate Next Steps
+- Implement and test RSS-based ingestion in Python
+- Set up SQL database schema
+- Create one complete example pipeline
+
+## Next Meeting
+**Time:** Wednesday, 4:00 PM  
+**Location:** Main Library
