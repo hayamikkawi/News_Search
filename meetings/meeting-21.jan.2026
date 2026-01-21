@@ -1,0 +1,42 @@
+# Development Meeting Summary
+
+**Date:** 21 January 2026  
+**Location / Platform:** Appleton 2.06
+
+##1. System Design 
+The system design will consist of 4 layers: 
+1. The crawler (data collecter) -> a python script that runs each x minutes fetches RSS feeds from news websites, cleans and stores them into database/disk.
+2. The indexer -> it's triggered each time new data is collected (it should be dynamic and optimized). 
+3. The IR + API -> the IR system is responsible of the retrieval and a REST API will receive the calls from the UI
+4. UI -> It's what the user interacts with. 
+
+##2. Features 
+1. Search Field: where the user writes the query --> Main feature
+    We should support boolean + phrase + proximity + queries.
+2. Filtration: 
+    a. By Date: we will have a date picker so that the user picks a date / date range. 
+    b. By Genre: example: sports/ politics .. etc (BTW: this can be moved to latest news section). 
+    c. By Location
+3. Summarize: A button the user clicks and it summarizes the content of all of the search results. 
+4. Query Completion
+5. Results Ranking 
+6. Latest News: On the side we will have latest news, actively updating and they can be filtered bu genre and location 
+7. Sentiment Analysis?
+8. Explain button?
+9. Allow user to dislike/like?
+10. Oposite Opinions 
+
+
+##3. Responsibilities: 
+By next week: 
+1. Xin should finish layer 1 mentioned in the system design. 
+2. Aidan and Haya should work on the index (at least provide a simple version). 
+3. Minghao will start working on the frontend. 
+4. Leyan will be there to support everyone. 
+
+
+
+## Next Meeting
+**Time:** Wednesday, 4:00 PM  
+**Location:** Main Library
+
