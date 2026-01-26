@@ -10,7 +10,7 @@ HEADLINE_KEY = "title"
 DESC_KEY = "description"
 CONTENT_KEY = "content"
 
-InvertedIndex: TypeAlias = dict[str, dict[int, list[int]]]
+InvertedIndex: TypeAlias = dict[str, dict[int, set[int]]]
 
 
 def write_index_to_file(token_dp: InvertedIndex, index_file: str) -> None:
@@ -26,7 +26,7 @@ def write_index_to_file(token_dp: InvertedIndex, index_file: str) -> None:
 
 # Index creating:
 def create_index(documents: dict) -> InvertedIndex:
-    token_dp = {}
+    token_dp: InvertedIndex = {}
 
     for doc_id, doc_value in documents.items():
         all_tokens = (
@@ -35,11 +35,11 @@ def create_index(documents: dict) -> InvertedIndex:
         for position, token in enumerate(all_tokens):
             # if it appeared before in this doc, just add its pos
             if token in token_dp and doc_id in token_dp[token]:
-                token_dp[token][doc_id].append(position)
+                token_dp[token][doc_id].add(position)
             else:
                 if token not in token_dp:
                     token_dp[token] = {}
-                token_dp[token][doc_id] = [position]
+                token_dp[token][doc_id] = set([position])
 
     return token_dp
 
