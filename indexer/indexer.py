@@ -22,10 +22,10 @@ InvertedIndex: TypeAlias = dict[str, dict[int, set[int]]]
 # catch the index gloabally to keep it in memory
 index: InvertedIndex = {}
 
-def write_index_to_file(token_dp: InvertedIndex, index_file: str) -> None:
+def write_index_to_file(index_file: str) -> None:
     # write the data to the file
     with open(index_file, "w", encoding="utf-8") as index_output_file:
-        for token, documents in token_dp.items():
+        for token, documents in index.items():
             index_output_file.write(f"{token}:{len(documents)}\n")
             for document_id, document_positions in documents.items():
                 index_output_file.write(
@@ -65,7 +65,7 @@ def indexing_main(input: str, output: str) -> None:
         processed_document = preprocess_document(document)
         append_document_to_index(processed_document)
     # write the result to output file
-    write_index_to_file(index, output)
+    write_index_to_file(output)
 
 # This will be called from outside to add more documents
 def add_new_documents(documents: list[dict]) -> None:
