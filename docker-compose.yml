@@ -11,3 +11,27 @@ services:
     ports:
       - "3306:3306"
     command: --default-authentication-plugin=mysql_native_password
+
+### !!! ToDo: Configure and enable the following services when ready !!!
+# # Crawler Service
+#   ttds-crawler:
+#     build: ./code/crawler  # Point to the crawler code directory
+#     container_name: ttds_crawler
+#     depends_on:
+#       - ttds-db            # Ensure the database starts before the crawler
+#     environment:
+#       - DB_HOST=ttds-db    # In Docker network, use service name to connect
+#       - DB_USER=ttds_app
+#       - DB_PASS=app_password_2026
+#     volumes:
+#       - ./code/crawler:/app # Mount code for hot reload
+
+#   # Indexer Service
+#   ttds-indexer:
+#     build: ./code/indexer
+#     container_name: ttds_indexer
+#     depends_on:
+#       - ttds-db
+#     volumes:
+#       - ./mysql-data:/data/raw     # Read raw database data mount point
+#       - ./index-storage:/app/index # ！！！Important: Persist the built index to disk
