@@ -40,6 +40,9 @@ def write_index_to_file(index_file: str) -> None:
 
 
 def write_index_to_binary_file(index_file: str) -> None:
+    # Q -> 8 bytes (unsigned long long)
+    FMT = "@Q"
+
     def compute_posting_deltas(sorted_postings: list[int]):
         posting_deltas = []
 
@@ -51,19 +54,53 @@ def write_index_to_binary_file(index_file: str) -> None:
         return posting_deltas
 
     with open(index_file, "wb") as index_output_file:
-        for token in list(index.keys())[:1]:
-            n_tokens = len(index.keys())
-            # Q -> 8 bytes (unsigned long long)
-            index_output_file.write(struct.pack("@Q", n_tokens))
-            break
+        n_tokens = len(index.keys())
+        index_output_file.write(struct.pack(FMT, n_tokens))
+
+        for token in sorted(list(index.keys())):
+            token_bytes = token.encode("utf-8")
+            index_output_file.write(struct.pack(FMT, len(token_bytes)))
+            index_output_file.write(token_bytes)
+
+            n_doc_ids = len(list(index[token].keys()))
+            index_output_file.write(struct.pack(FMT, n_doc_ids))
+            for doc_id in list(index[token].keys()):
+                index_output_file.write(struct.pack(FMT, doc_id))
 
 
 def read_index_from_binary_file(index_path: str) -> InvertedIndex:
     # Need to open with '+' otherwise permission denied
     with open(index_path, "rb+") as index_file:
+        # Map the file into memory for fast access
         with mmap.mmap(index_file.fileno(), 0) as mm:
-            n_terms = struct.unpack("@Q", mm[0:8])[0]
-            print(n_terms)
+            head = 0
+
+            n_tokens: int
+            n_tokens = struct.unpack("@Q", mm[head : head + 8])[0]
+            head += 8
+
+            print(n_tokens)
+
+            for _ in range(n_tokens):
+                token_len: int
+                token_len = struct.unpack("@Q", mm[head : head + 8])[0]
+                head += 8
+
+                token_bytes = mm[head : head + token_len]
+                token = token_bytes.decode("utf-8")
+                head += token_len
+
+                n_doc_ids: int
+                n_doc_ids = struct.unpack("@Q", mm[head : head + 8])[0]
+                head += 8
+
+                print(token)
+                for _ in range(n_doc_ids):
+                    doc_id: int
+                    doc_id = struct.unpack("@Q", mm[head : head + 8])[0]
+                    head += 8
+
+                    print(doc_id)
 
     return dict()
 
