@@ -1,30 +1,30 @@
-use ttds_search_enginel
+use ttds_search_engine;
 
 CREATE TABLE IF NOT EXISTS news_articles (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT 'Auto-increment primary key',
 
-    -- URL 相关
+    -- URL Related fields
     url VARCHAR(2048) NOT NULL COMMENT 'Original article URL',
     final_url VARCHAR(2048) NOT NULL COMMENT 'Final URL after redirection',
     feed_url VARCHAR(2048) NOT NULL COMMENT 'RSS feed source URL',
 
-    -- RSS 元数据
+    -- RSS Metadata
     rss_title VARCHAR(1000) DEFAULT NULL COMMENT 'Title in RSS',
     rss_published_at DATETIME DEFAULT NULL COMMENT 'Published time in RSS',
 
-    -- 抓取信息
+    -- Fetch information
     fetched_at DATETIME NOT NULL COMMENT 'Fetch time',
     http_status INT DEFAULT NULL COMMENT 'HTTP status code',
     error VARCHAR(500) DEFAULT NULL COMMENT 'Error message',
 
-    -- 提取的文章内容
+    -- Extracted article content
     text_ok BOOLEAN DEFAULT NULL COMMENT 'Whether text extraction was successful',
     title VARCHAR(1000) DEFAULT NULL COMMENT 'Extracted article title',
     author VARCHAR(500) DEFAULT NULL COMMENT 'Extracted author',
     date DATETIME DEFAULT NULL COMMENT 'Extracted article publication date',
     language VARCHAR(50) DEFAULT NULL COMMENT 'Article language',
     text MEDIUMTEXT DEFAULT NULL COMMENT 'Extracted main content',
-    -- 索引和约束
+    -- Indexes and constraints
     INDEX idx_url (url(255)),
     INDEX idx_feed_url (feed_url(255)),
     INDEX idx_fetched_at (fetched_at),
