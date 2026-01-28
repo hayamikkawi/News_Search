@@ -12,6 +12,7 @@ ID_KEY = "id"
 HEADLINE_KEY = "title"
 DESC_KEY = "description"
 CONTENT_KEY = "content"
+STRUCT_FMT = "@Q"
 
 
 # Data type for documents
@@ -41,7 +42,6 @@ def write_index_to_file(index_file: str) -> None:
 
 def write_index_to_binary_file(index_file: str) -> None:
     # Q -> 8 bytes (unsigned long long)
-    FMT = "@Q"
 
     def compute_posting_deltas(sorted_postings: list[int]):
         posting_deltas = []
@@ -55,17 +55,26 @@ def write_index_to_binary_file(index_file: str) -> None:
 
     with open(index_file, "wb") as index_output_file:
         n_tokens = len(index.keys())
-        index_output_file.write(struct.pack(FMT, n_tokens))
+        index_output_file.write(struct.pack(STRUCT_FMT, n_tokens))
 
         for token in sorted(list(index.keys())):
             token_bytes = token.encode("utf-8")
-            index_output_file.write(struct.pack(FMT, len(token_bytes)))
+            index_output_file.write(struct.pack(STRUCT_FMT, len(token_bytes)))
             index_output_file.write(token_bytes)
 
             n_doc_ids = len(list(index[token].keys()))
-            index_output_file.write(struct.pack(FMT, n_doc_ids))
+            index_output_file.write(struct.pack(STRUCT_FMT, n_doc_ids))
             for doc_id in list(index[token].keys()):
-                index_output_file.write(struct.pack(FMT, doc_id))
+                index_output_file.write(struct.pack(STRUCT_FMT, doc_id))
+
+                n_positions = len(list(index[token][doc_id]))
+                index_output_file.write(struct.pack(STRUCT_FMT, n_positions))
+
+                posting_deltas = compute_posting_deltas(
+                    sorted(list(index[token][doc_id]))
+                )
+                for delta in posting_deltas:
+                    index_output_file.write(struct.pack(STRUCT_FMT, delta))
 
 
 def read_index_from_binary_file(index_path: str) -> InvertedIndex:
@@ -76,14 +85,13 @@ def read_index_from_binary_file(index_path: str) -> InvertedIndex:
             head = 0
 
             n_tokens: int
-            n_tokens = struct.unpack("@Q", mm[head : head + 8])[0]
+            n_tokens = struct.unpack(STRUCT_FMT, mm[head : head + 8])[0]
             head += 8
 
-            print(n_tokens)
-
+            index = {}
             for _ in range(n_tokens):
                 token_len: int
-                token_len = struct.unpack("@Q", mm[head : head + 8])[0]
+                token_len = struct.unpack(STRUCT_FMT, mm[head : head + 8])[0]
                 head += 8
 
                 token_bytes = mm[head : head + token_len]
@@ -91,18 +99,35 @@ def read_index_from_binary_file(index_path: str) -> InvertedIndex:
                 head += token_len
 
                 n_doc_ids: int
-                n_doc_ids = struct.unpack("@Q", mm[head : head + 8])[0]
+                n_doc_ids = struct.unpack(STRUCT_FMT, mm[head : head + 8])[0]
                 head += 8
 
-                print(token)
+                index[token] = {}
                 for _ in range(n_doc_ids):
                     doc_id: int
                     doc_id = struct.unpack("@Q", mm[head : head + 8])[0]
                     head += 8
 
-                    print(doc_id)
+                    index[token] = {doc_id: set()}
 
-    return dict()
+                    n_positions: int
+                    n_positions = struct.unpack("@Q", mm[head : head + 8])[0]
+                    head += 8
+
+                    last_position = 0
+
+                    index[token][doc_id] = set()
+                    for _ in range(n_positions):
+                        delta: int
+                        delta = struct.unpack("@Q", mm[head : head + 8])[0]
+                        head += 8
+
+                        position = delta + last_position
+                        last_position = position
+
+                        index[token][doc_id].add(position)
+
+    return index
 
 
 def append_document_to_index(document: Document):
