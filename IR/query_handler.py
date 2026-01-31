@@ -1,7 +1,9 @@
 from typing import Protocol
-from IR.types import InvertedIndex
+from IR.types import InvertedIndex, DocumentsStat
 
 # serves as a protocol (inteface)
 class QueryHandler(Protocol): 
-    def handle_query(query: str, index: InvertedIndex) -> list[str]:
+    def handle_query(query: str,
+                     index: InvertedIndex,
+                     documents_stat: DocumentsStat) -> list[str]:
         ...

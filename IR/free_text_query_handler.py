@@ -1,11 +1,10 @@
 from collections import defaultdict
 from query_handler import QueryHandler
-from IR.types import InvertedIndex
+from IR.types import InvertedIndex, DocumentsStat
 import math
 
 class FreeTextQueryHandler(QueryHandler): 
-    def rank_with_bm25(
-    query_tokens: list[str],
+    def rank_with_bm25(query_tokens: list[str],
     index: InvertedIndex,
     doc_lengths: dict[str, int],
     avg_doc_len: float,
@@ -26,17 +25,12 @@ class FreeTextQueryHandler(QueryHandler):
                 scores[doc_id] += score
         return sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
-    def get_candidate_documents(query_tokens: list[str], index: InvertedIndex) -> set[str]:
-        candidate_documents: set[str] = set()
-        for token in query_tokens: 
-            if token in index:
-                candidate_documents.update(index[token])
-        return candidate_documents 
-
-    def handle_query(self, query: str, index: InvertedIndex, documents_stats: dict) -> list[str]:
+    def handle_query(self, query: str, index: InvertedIndex, documents_stat: DocumentsStat) -> list[str]:
         # preprocess the query into tokens
         query_tokens: list [str] = []
-        candidate_docs = self.get_candidate_documents(query_tokens, index)
-        doc_lens = documents_stats["doc_lengths"]
-        
-        return []
+        doc_lens = documents_stat.document_len_map
+        avg_doc_lens = documents_stat.documents_len_avg
+        N = documents_stat.documents_count
+        ranked_results = self.rank_with_bm25(query_tokens, index,
+                                             doc_lens, avg_doc_lens, N)
+        return [result[0] for result in ranked_results]
