@@ -2,6 +2,7 @@ from collections import defaultdict
 from query_handler import QueryHandler
 from IR.types import InvertedIndex, DocumentsStat
 import math
+from preprocesser import preprocess_line
 
 class FreeTextQueryHandler(QueryHandler): 
     def rank_with_bm25(query_tokens: list[str],
@@ -27,7 +28,7 @@ class FreeTextQueryHandler(QueryHandler):
 
     def handle_query(self, query: str, index: InvertedIndex, documents_stat: DocumentsStat) -> list[str]:
         # preprocess the query into tokens
-        query_tokens: list [str] = []
+        query_tokens: list [str] = preprocess_line(query)
         doc_lens = documents_stat.document_len_map
         avg_doc_lens = documents_stat.documents_len_avg
         N = documents_stat.documents_count
