@@ -5,7 +5,7 @@ InvertedIndex: TypeAlias = dict[str, dict[int, set[int]]]
 
 @dataclass
 class DocumentsStat: 
-    document_len_map: dict[str, int]
+    document_len_map: dict[int, int]
     
     @property 
     def documents_count(self) -> int: 
