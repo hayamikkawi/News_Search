@@ -49,7 +49,6 @@ def main():
     ir_main = IRMain(index_filepath, documents_stat_filepath)
     res = ir_main.handle_query("tell me about natural language processing", QueryType.free_text)
     print(res)
-    # TODO: remove (just for testig)
 
 
 if __name__ == "__main__":
