@@ -1,5 +1,5 @@
 from typing import Protocol
-from IR.types import InvertedIndex, DocumentsStat
+from common_types import InvertedIndex, DocumentsStat
 
 # serves as a protocol (inteface)
 class QueryHandler(Protocol): 

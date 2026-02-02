@@ -1,10 +1,11 @@
 from typing import TypeAlias
+from dataclasses import dataclass
 
 InvertedIndex: TypeAlias = dict[str, dict[int, set[int]]]
 
+@dataclass
 class DocumentsStat: 
-    def __init__(self, document_len_map: dict[str, int]):
-        self.document_len_map = document_len_map
+    document_len_map: dict[int, int]
     
     @property 
     def documents_count(self) -> int: 

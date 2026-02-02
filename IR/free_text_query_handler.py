@@ -1,11 +1,12 @@
 from collections import defaultdict
 from query_handler import QueryHandler
-from IR.types import InvertedIndex, DocumentsStat
+from common_types import InvertedIndex, DocumentsStat
 import math
 from preprocesser import preprocess_line
 
 class FreeTextQueryHandler(QueryHandler): 
-    def rank_with_bm25(query_tokens: list[str],
+    def rank_with_bm25(self,
+    query_tokens: list[str],
     index: InvertedIndex,
     doc_lengths: dict[str, int],
     avg_doc_len: float,
