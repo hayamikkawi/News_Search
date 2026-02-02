@@ -38,7 +38,7 @@ def encode_vbytes(n: int) -> bytes:
     encoded_bytes.append((n & 0b01111111) | 0b10000000)
     return bytes(encoded_bytes)
 
-
+# TODO: remove
 def decode_vbytes(vbytes, offset: int = 0, byte_no=0) -> Tuple[int, int]:
     byte = vbytes[offset]
     num = (byte & 0b1111111) << (7 * byte_no)
@@ -88,7 +88,7 @@ def write_index_to_binary_file(index_file: str) -> None:
                     vbyte_delta = encode_vbytes(delta)
                     index_output_file.write(vbyte_delta)
 
-
+# TODO: remove
 def read_index_from_binary_file(index_path: str) -> InvertedIndex:
     # Need to open with '+' otherwise permission denied
     with open(index_path, "rb+") as index_file:
@@ -187,19 +187,15 @@ def indexing_main(input: str, output: str, stats: str) -> None:
     write_documents_stats(stats)
     # write the result to output file
     write_index_to_binary_file(output)
+
     #TODO: remove 
-    with open(stats, "r", encoding="utf-8") as f:
-        stats = json.load(f)
-        obj = DocumentsStat(**stats)
-        print(obj)
-    #TODO: remove 
-    read_index = read_index_from_binary_file(output)
-    print(index)
-    print(read_index)
-    for key in index.keys():
-        a = index[key]
-        b = read_index[key]
-        print(a == b)
+    # read_index = read_index_from_binary_file(output)
+    # print(index)
+    # print(read_index)
+    # for key in index.keys():
+    #     a = index[key]
+    #     b = read_index[key]
+    #     print(a == b)
 
 
 # This will be called from outside to add more documents
