@@ -2,7 +2,7 @@ import json
 import mmap
 import struct
 from dataclasses import dataclass
-from typing import Final, Optional, Tuple, TypeAlias
+from typing import Final, Tuple, TypeAlias
 
 from config import CONFIG
 from preprocesser import preprocess_line
@@ -25,7 +25,8 @@ class Document:
     preprocessed_content: list[str]
 
 
-InvertedIndex: TypeAlias = dict[str, dict[int, set[int]]]
+Posting: TypeAlias = dict[int, set[int]]
+InvertedIndex: TypeAlias = dict[str, Posting]
 # catch the index gloabally to keep it in memory
 index: InvertedIndex = {}
 
@@ -83,8 +84,6 @@ def write_index_to_binary_file(index_file: str) -> None:
 
         token_offsets = []
         for token in sorted(index.keys()):
-            # print("token:", token, "offset:", head)
-
             token_offsets.append(head)
 
             token_bytes = token.encode("utf-8")
@@ -143,9 +142,7 @@ def query_index_from_binary_file(index_path: str, token: str) -> dict[int, set[i
 
             n_tokens, table_start = read_int(mm, 0)
 
-            def binary_search(left: int, right: int) -> int | None:
-                nonlocal head
-
+            def binary_search(left: int, right: int, head: int) -> int | None:
                 if left > right:
                     return None
 
@@ -155,25 +152,26 @@ def query_index_from_binary_file(index_path: str, token: str) -> dict[int, set[i
 
                 if curr_token == token:
                     return head
-                elif curr_token < token:
-                    return binary_search(mid + 1, right)
+                if curr_token < token:
+                    return binary_search(mid + 1, right, head)
                 else:
-                    return binary_search(left, mid - 1)
+                    return binary_search(left, mid - 1, head)
 
-            posting_offset = binary_search(0, n_tokens - 1)
+            posting_offset = binary_search(0, n_tokens - 1, head)
 
-            posting, _ = read_posting(mm[posting_offset:])
+            if posting_offset is None:
+                return posting
 
-            print(posting)
+            posting, head = read_posting(mm, posting_offset)
 
     return posting
 
 
-def read_posting(data: mmap.mmap | bytes) -> Tuple[dict[int, set[int]], int]:
+def read_posting(data: mmap.mmap | bytes, offset: int) -> Tuple[Posting, int]:
     posting = {}
 
     head: int
-    n_doc_ids, head = read_int(data, 0)
+    n_doc_ids, head = read_int(data, offset)
 
     doc_id = 0
     for _ in range(n_doc_ids):
@@ -208,40 +206,10 @@ def read_index_from_binary_file(index_path: str) -> InvertedIndex:
 
             head = index_file.seek((n_tokens * 4) + head)
             for _ in range(n_tokens):
-                print(head)
                 token, head = read_str(mm, head)
-                print(token)
-                # n_doc_ids, head = read_int(mm, head)
 
-                posting, bytes_read = read_posting(mm[head:])
+                posting, head = read_posting(mm, head)
                 index[token] = posting
-                head += bytes_read
-
-                print("Got here")
-
-                # doc_id = 0
-                # for _ in range(n_doc_ids):
-                #     doc_id_delta, head = read_var_int(mm, head)
-                #     doc_id += doc_id_delta
-
-                #     n_positions, head = read_int(mm, head)
-
-                #     index[token][doc_id] = set()
-
-                #     last_position = 0
-                #     for _ in range(n_positions):
-                #         delta, head = read_var_int(mm, head)
-
-                #         position = delta + last_position
-                #         last_position = position
-
-                #         index[token][doc_id].add(position)
-
-                # b = index[token]
-
-                # print(b)
-
-                # # print(a, b)
 
     return index
 
@@ -287,7 +255,7 @@ def indexing_main(input: str, output: str) -> None:
     # posting = query_index_from_binary_file(output, "transform")
     # print(posting)
     read_index = read_index_from_binary_file(output)
-    print(read_index)
+    # print(read_index)
 
     equals = []
     for key in index.keys():
@@ -296,12 +264,12 @@ def indexing_main(input: str, output: str) -> None:
         equals.append(a == b)
     print(all(equals))
 
-    # equals = []
-    # for key in index.keys():
-    #     a = index[key]
-    #     b = query_index_from_binary_file(output, key)
-    #     equals.append(a == b)
-    # print(all(equals))
+    equals = []
+    for key in index.keys():
+        a = index[key]
+        b = query_index_from_binary_file(output, key)
+        equals.append(a == b)
+    print(all(equals))
 
 
 # This will be called from outside to add more documents
