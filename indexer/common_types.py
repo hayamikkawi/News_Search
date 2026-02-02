@@ -1,7 +1,8 @@
 from typing import TypeAlias
 from dataclasses import dataclass
 
-InvertedIndex: TypeAlias = dict[str, dict[int, set[int]]]
+Posting: TypeAlias = dict[int, set[int]]
+InvertedIndex: TypeAlias = dict[str, Posting]
 
 @dataclass
 class DocumentsStat: 
