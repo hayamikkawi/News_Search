@@ -1,18 +1,18 @@
 import json
 import mmap
 import struct
-from dataclasses import dataclass
-from typing import TypeAlias
-
+from dataclasses import dataclass, asdict
+from typing import Tuple
 from config import CONFIG
 from preprocesser import preprocess_line
+from common_types import InvertedIndex, DocumentsStat
 
 # CONSTANTS
 ID_KEY = "id"
 HEADLINE_KEY = "title"
 DESC_KEY = "description"
 CONTENT_KEY = "content"
-STRUCT_FMT = "@Q"
+STRUCT_FMT = "@h"
 
 
 # Data type for documents
@@ -23,21 +23,32 @@ class Document:
     preprocessed_description: list[str]
     preprocessed_content: list[str]
 
-
-InvertedIndex: TypeAlias = dict[str, dict[int, set[int]]]
 # catch the index gloabally to keep it in memory
 index: InvertedIndex = {}
+# catch the stats globally 
+docs_stats: DocumentsStat = DocumentsStat({})
+
+def encode_vbytes(n: int) -> bytes:
+    encoded_bytes = []
+    while n >= 128:
+        # Set high bit zero to continue
+        encoded_bytes.append(n & 0b01111111)
+        n >>= 7
+    # Terminate by setting high bit to one
+    encoded_bytes.append((n & 0b01111111) | 0b10000000)
+    return bytes(encoded_bytes)
 
 
-def write_index_to_file(index_file: str) -> None:
-    # write the data to the file
-    with open(index_file, "w", encoding="utf-8") as index_output_file:
-        for token, documents in index.items():
-            index_output_file.write(f"{token}:{len(documents)}\n")
-            for document_id, document_positions in documents.items():
-                index_output_file.write(
-                    f"\t{document_id}: {','.join(map(str, document_positions))}\n"
-                )
+def decode_vbytes(vbytes, offset: int = 0, byte_no=0) -> Tuple[int, int]:
+    byte = vbytes[offset]
+    num = (byte & 0b1111111) << (7 * byte_no)
+
+    if byte & 0b10000000:
+        return num, 1
+
+    rest_num, n_bytes_read = decode_vbytes(vbytes, offset + 1, byte_no + 1)
+
+    return num | rest_num, 1 + n_bytes_read
 
 
 def write_index_to_binary_file(index_file: str) -> None:
@@ -74,7 +85,8 @@ def write_index_to_binary_file(index_file: str) -> None:
                     sorted(list(index[token][doc_id]))
                 )
                 for delta in posting_deltas:
-                    index_output_file.write(struct.pack(STRUCT_FMT, delta))
+                    vbyte_delta = encode_vbytes(delta)
+                    index_output_file.write(vbyte_delta)
 
 
 def read_index_from_binary_file(index_path: str) -> InvertedIndex:
@@ -84,43 +96,45 @@ def read_index_from_binary_file(index_path: str) -> InvertedIndex:
         with mmap.mmap(index_file.fileno(), 0) as mm:
             head = 0
 
+            word_size = struct.calcsize(STRUCT_FMT)
+
             n_tokens: int
-            n_tokens = struct.unpack(STRUCT_FMT, mm[head : head + 8])[0]
-            head += 8
+            n_tokens = struct.unpack(STRUCT_FMT, mm[head : head + word_size])[0]
+            head += word_size
 
             index = {}
             for _ in range(n_tokens):
                 token_len: int
-                token_len = struct.unpack(STRUCT_FMT, mm[head : head + 8])[0]
-                head += 8
+                token_len = struct.unpack(STRUCT_FMT, mm[head : head + word_size])[0]
+                head += word_size
 
                 token_bytes = mm[head : head + token_len]
                 token = token_bytes.decode("utf-8")
                 head += token_len
 
                 n_doc_ids: int
-                n_doc_ids = struct.unpack(STRUCT_FMT, mm[head : head + 8])[0]
-                head += 8
+                n_doc_ids = struct.unpack(STRUCT_FMT, mm[head : head + word_size])[0]
+                head += word_size
 
                 index[token] = {}
                 for _ in range(n_doc_ids):
                     doc_id: int
-                    doc_id = struct.unpack("@Q", mm[head : head + 8])[0]
-                    head += 8
-
-                    index[token] = {doc_id: set()}
+                    doc_id = struct.unpack(STRUCT_FMT, mm[head : head + word_size])[0]
+                    head += word_size
 
                     n_positions: int
-                    n_positions = struct.unpack("@Q", mm[head : head + 8])[0]
-                    head += 8
+                    n_positions = struct.unpack(
+                        STRUCT_FMT, mm[head : head + word_size]
+                    )[0]
+                    head += word_size
 
                     last_position = 0
 
                     index[token][doc_id] = set()
                     for _ in range(n_positions):
                         delta: int
-                        delta = struct.unpack("@Q", mm[head : head + 8])[0]
-                        head += 8
+                        delta, bytes_read = decode_vbytes(mm, head)
+                        head += bytes_read
 
                         position = delta + last_position
                         last_position = position
@@ -129,6 +143,10 @@ def read_index_from_binary_file(index_path: str) -> InvertedIndex:
 
     return index
 
+def write_documents_stats(stats_path: str) -> None: 
+    print(asdict(docs_stats))
+    with open(stats_path, "w") as f: 
+        json.dump(asdict(docs_stats), f, indent=2)
 
 def append_document_to_index(document: Document):
     doc_id = document.id
@@ -137,6 +155,7 @@ def append_document_to_index(document: Document):
         + document.preprocessed_description
         + document.preprocessed_content
     )
+    docs_stats.document_len_map[doc_id] = len(all_tokens)
     for position, token in enumerate(all_tokens):
         # if it appeared before in this doc, just add its pos
         if token in index and doc_id in index[token]:
@@ -155,8 +174,7 @@ def preprocess_document(document: dict) -> Document:
         document[ID_KEY], processed_headline, processed_desc, processed_content
     )
 
-
-def indexing_main(input: str, output: str) -> None:
+def indexing_main(input: str, output: str, stats: str) -> None:
     # TODO: parse the files into docs
     with open(input, "r", encoding="utf-8") as f:
         documents: list[dict] = json.load(f)
@@ -165,9 +183,23 @@ def indexing_main(input: str, output: str) -> None:
     for document in documents:
         processed_document = preprocess_document(document)
         append_document_to_index(processed_document)
+    # write the stats into the stats file
+    write_documents_stats(stats)
     # write the result to output file
     write_index_to_binary_file(output)
-    read_index_from_binary_file(output)
+    #TODO: remove 
+    with open(stats, "r", encoding="utf-8") as f:
+        stats = json.load(f)
+        obj = DocumentsStat(**stats)
+        print(obj)
+    #TODO: remove 
+    read_index = read_index_from_binary_file(output)
+    print(index)
+    print(read_index)
+    for key in index.keys():
+        a = index[key]
+        b = read_index[key]
+        print(a == b)
 
 
 # This will be called from outside to add more documents
@@ -184,7 +216,8 @@ def add_new_document(document: dict) -> None:
 def main() -> None:
     input_file = CONFIG.input_file_path
     output_file = CONFIG.output_file_path
-    indexing_main(input_file, output_file)
+    stats_file = CONFIG.stats_file_path
+    indexing_main(input_file, output_file, stats_file)
 
 
 if __name__ == "__main__":
