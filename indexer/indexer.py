@@ -2,17 +2,18 @@ import json
 import mmap
 import struct
 from dataclasses import dataclass, asdict
-from typing import Tuple
+from typing import Final, Tuple
 from config import CONFIG
 from preprocesser import preprocess_line
-from common_types import InvertedIndex, DocumentsStat
+from common_types import InvertedIndex, DocumentsStat, Posting
 
 # CONSTANTS
-ID_KEY = "id"
-HEADLINE_KEY = "title"
-DESC_KEY = "description"
-CONTENT_KEY = "content"
-STRUCT_FMT = "@h"
+ID_KEY: Final = "id"
+HEADLINE_KEY: Final = "title"
+DESC_KEY: Final = "description"
+CONTENT_KEY: Final = "content"
+STRUCT_FMT: Final = "@I"  # 4 bytes
+WORD_SIZE: Final = struct.calcsize(STRUCT_FMT)
 
 
 # Data type for documents
@@ -39,21 +40,19 @@ def encode_vbytes(n: int) -> bytes:
     return bytes(encoded_bytes)
 
 # TODO: remove
-def decode_vbytes(vbytes, offset: int = 0, byte_no=0) -> Tuple[int, int]:
-    byte = vbytes[offset]
+def decode_vbytes(vbytes: bytes, byte_no=0) -> Tuple[int, int]:
+    byte = vbytes[byte_no]
     num = (byte & 0b1111111) << (7 * byte_no)
 
     if byte & 0b10000000:
         return num, 1
 
-    rest_num, n_bytes_read = decode_vbytes(vbytes, offset + 1, byte_no + 1)
+    rest_num, n_bytes_read = decode_vbytes(vbytes, byte_no + 1)
 
     return num | rest_num, 1 + n_bytes_read
 
 
 def write_index_to_binary_file(index_file: str) -> None:
-    # Q -> 8 bytes (unsigned long long)
-
     def compute_posting_deltas(sorted_postings: list[int]):
         posting_deltas = []
 
@@ -66,80 +65,138 @@ def write_index_to_binary_file(index_file: str) -> None:
 
     with open(index_file, "wb") as index_output_file:
         n_tokens = len(index.keys())
-        index_output_file.write(struct.pack(STRUCT_FMT, n_tokens))
 
-        for token in sorted(list(index.keys())):
+        # Reserve 4 bytes for n_tokens and each entry in lookup table
+        head = index_output_file.write(b"\x00" * WORD_SIZE * (1 + n_tokens))
+
+        token_offsets = []
+        for token in sorted(index.keys()):
+            token_offsets.append(head)
+
             token_bytes = token.encode("utf-8")
-            index_output_file.write(struct.pack(STRUCT_FMT, len(token_bytes)))
-            index_output_file.write(token_bytes)
 
-            n_doc_ids = len(list(index[token].keys()))
-            index_output_file.write(struct.pack(STRUCT_FMT, n_doc_ids))
-            for doc_id in list(index[token].keys()):
-                index_output_file.write(struct.pack(STRUCT_FMT, doc_id))
+            head += index_output_file.write(struct.pack(STRUCT_FMT, len(token_bytes)))
+            head += index_output_file.write(token_bytes)
 
-                n_positions = len(list(index[token][doc_id]))
-                index_output_file.write(struct.pack(STRUCT_FMT, n_positions))
+            doc_ids = sorted(index[token].keys())
+            doc_ids_deltas = compute_posting_deltas(doc_ids)
 
-                posting_deltas = compute_posting_deltas(
-                    sorted(list(index[token][doc_id]))
-                )
+            head += index_output_file.write(struct.pack(STRUCT_FMT, len(doc_ids)))
+
+            doc_id = 0
+            for doc_id_delta in doc_ids_deltas:
+                head += index_output_file.write(encode_vbytes(doc_id_delta))
+
+                doc_id += doc_id_delta
+
+                positions = sorted(index[token][doc_id])
+                head += index_output_file.write(struct.pack(STRUCT_FMT, len(positions)))
+
+                posting_deltas = compute_posting_deltas(positions)
                 for delta in posting_deltas:
                     vbyte_delta = encode_vbytes(delta)
-                    index_output_file.write(vbyte_delta)
+                    head += index_output_file.write(vbyte_delta)
+
+        index_output_file.seek(0)
+        index_output_file.write(struct.pack(STRUCT_FMT, n_tokens))
+        for token_offset in token_offsets:
+            index_output_file.write(struct.pack(STRUCT_FMT, token_offset))
+
+
+def read_int(data: bytes | mmap.mmap, offset: int) -> Tuple[int, int]:
+    value = struct.unpack(STRUCT_FMT, data[offset : offset + WORD_SIZE])[0]
+    return value, offset + WORD_SIZE
+
+
+def read_str(data: bytes | mmap.mmap, offset: int) -> Tuple[str, int]:
+    token_len, offset = read_int(data, offset)
+    token_bytes = data[offset : offset + token_len]
+    token = token_bytes.decode("utf-8")
+    return token, offset + token_len
+
+
+def read_var_int(data: bytes | mmap.mmap, offset: int) -> Tuple[int, int]:
+    value, bytes_read = decode_vbytes(data[offset:])
+    return value, offset + bytes_read
+
+
+def query_index_from_binary_file(index_path: str, token: str) -> dict[int, set[int]]:
+    posting = dict()
+
+    with open(index_path, "rb+") as index_file:
+        with mmap.mmap(index_file.fileno(), 0) as mm:
+            head = 0
+
+            n_tokens, table_start = read_int(mm, 0)
+
+            def binary_search(left: int, right: int, head: int) -> int | None:
+                if left > right:
+                    return None
+
+                mid = (left + right) // 2
+                token_offset, head = read_int(mm, table_start + (mid * WORD_SIZE))
+                curr_token, head = read_str(mm, token_offset)
+
+                if curr_token == token:
+                    return head
+                if curr_token < token:
+                    return binary_search(mid + 1, right, head)
+                else:
+                    return binary_search(left, mid - 1, head)
+
+            posting_offset = binary_search(0, n_tokens - 1, head)
+
+            if posting_offset is None:
+                return posting
+
+            posting, head = read_posting(mm, posting_offset)
+
+    return posting
+
+
+def read_posting(data: mmap.mmap | bytes, offset: int) -> Tuple[Posting, int]:
+    posting = {}
+
+    head: int
+    n_doc_ids, head = read_int(data, offset)
+
+    doc_id = 0
+    for _ in range(n_doc_ids):
+        doc_id_delta, head = read_var_int(data, head)
+        doc_id += doc_id_delta
+
+        posting[doc_id] = set()
+
+        n_positions, head = read_int(data, head)
+
+        last_position = 0
+        for _ in range(n_positions):
+            delta, head = read_var_int(data, head)
+
+            position = delta + last_position
+            last_position = position
+
+            posting[doc_id].add(position)
+
+    return posting, head
 
 # TODO: remove
 def read_index_from_binary_file(index_path: str) -> InvertedIndex:
+    index = {}
+
     # Need to open with '+' otherwise permission denied
     with open(index_path, "rb+") as index_file:
         # Map the file into memory for fast access
         with mmap.mmap(index_file.fileno(), 0) as mm:
             head = 0
+            n_tokens, head = read_int(mm, head)
 
-            word_size = struct.calcsize(STRUCT_FMT)
-
-            n_tokens: int
-            n_tokens = struct.unpack(STRUCT_FMT, mm[head : head + word_size])[0]
-            head += word_size
-
-            index = {}
+            head = index_file.seek((n_tokens * 4) + head)
             for _ in range(n_tokens):
-                token_len: int
-                token_len = struct.unpack(STRUCT_FMT, mm[head : head + word_size])[0]
-                head += word_size
+                token, head = read_str(mm, head)
 
-                token_bytes = mm[head : head + token_len]
-                token = token_bytes.decode("utf-8")
-                head += token_len
-
-                n_doc_ids: int
-                n_doc_ids = struct.unpack(STRUCT_FMT, mm[head : head + word_size])[0]
-                head += word_size
-
-                index[token] = {}
-                for _ in range(n_doc_ids):
-                    doc_id: int
-                    doc_id = struct.unpack(STRUCT_FMT, mm[head : head + word_size])[0]
-                    head += word_size
-
-                    n_positions: int
-                    n_positions = struct.unpack(
-                        STRUCT_FMT, mm[head : head + word_size]
-                    )[0]
-                    head += word_size
-
-                    last_position = 0
-
-                    index[token][doc_id] = set()
-                    for _ in range(n_positions):
-                        delta: int
-                        delta, bytes_read = decode_vbytes(mm, head)
-                        head += bytes_read
-
-                        position = delta + last_position
-                        last_position = position
-
-                        index[token][doc_id].add(position)
+                posting, head = read_posting(mm, head)
+                index[token] = posting
 
     return index
 
@@ -187,15 +244,24 @@ def indexing_main(input: str, output: str, stats: str) -> None:
     write_documents_stats(stats)
     # write the result to output file
     write_index_to_binary_file(output)
-
-    #TODO: remove 
-    # read_index = read_index_from_binary_file(output)
-    # print(index)
+    # posting = query_index_from_binary_file(output, "transform")
+    # print(posting)
+    read_index = read_index_from_binary_file(output)
     # print(read_index)
-    # for key in index.keys():
-    #     a = index[key]
-    #     b = read_index[key]
-    #     print(a == b)
+
+    equals = []
+    for key in index.keys():
+        a = index[key]
+        b = read_index[key]
+        equals.append(a == b)
+    print(all(equals))
+
+    equals = []
+    for key in index.keys():
+        a = index[key]
+        b = query_index_from_binary_file(output, key)
+        equals.append(a == b)
+    print(all(equals))
 
 
 # This will be called from outside to add more documents
