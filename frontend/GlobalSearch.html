@@ -1,0 +1,1163 @@
+
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GlobalSearch - Sentiment-Aware News Search Engine</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes pulse-soft {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); }
+    }
+    .animate-pulse-soft {
+      animation: pulse-soft 3s infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 italic-none">
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+<span class="iconify w-6 h-6" data-icon="heroicons:globe-alt-20-solid"></span>
+</div>
+<span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 tracking-tight">GlobalSearch</span>
+</div>
+
+
+</header>
+<main class="max-w-[1440px] mx-auto p-6 lg:p-10 space-y-8">
+<!-- Hero Search Section -->
+<section class="relative py-12 px-6 bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[2.5rem] shadow-2xl">
+<div class="absolute inset-0 opacity-20 pointer-events-none">
+<div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_50%,rgba(99,102,241,0.4),transparent_50%)]"></div>
+</div>
+<div class="relative z-10 max-w-4xl mx-auto text-center space-y-6">
+<div class="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm text-indigo-300 text-xs font-semibold uppercase tracking-widest animate-pulse-soft">
+<span>Search Engine Ready</span>
+</div>
+<h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
+          Understand the World</span>
+</h1>
+<!-- Search Mode Toggle -->
+<div class="flex justify-center gap-3 mb-6">
+  <button id="mode-freetext" class="mode-toggle px-6 py-2 rounded-full font-semibold transition-all active" 
+    style="background-color: white; color: #4f46e5;">
+    <span class="iconify" data-icon="heroicons:magnifying-glass"></span> Free Text
+  </button>
+  <button id="mode-boolean" class="mode-toggle px-6 py-2 rounded-full font-semibold transition-all" 
+    style="background-color: rgba(255,255,255,0.2); color: white; border: 2px solid rgba(255,255,255,0.3);">
+    <span class="iconify" data-icon="heroicons:adjustments-horizontal"></span> Boolean Search
+  </button>
+</div>
+<!-- Free Text Search (Default) -->
+<div id="freetext-search" class="search-mode-container">
+<div class="relative group">
+<div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-violet-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+<div class="relative flex items-center bg-white rounded-2xl shadow-xl">
+<span class="iconify w-6 h-6 ml-6 text-slate-400" data-icon="heroicons:magnifying-glass"></span>
+<input id="search-input" class="w-full px-6 py-5 outline-none text-lg text-slate-700 bg-transparent placeholder:text-slate-400" placeholder="Enter news keywords" type="text"/>
+<button class="bg-indigo-600 text-white px-8 py-5 font-bold hover:bg-indigo-700 transition-colors flex items-center space-x-2">
+<span>Explore Now</span>
+</button>
+</div>
+<!-- Autocomplete Dropdown (Simulated) -->
+<div class="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-2xl border border-slate-100 p-2 z-50 hidden group-focus-within:block">
+<div class="p-3 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center justify-between">
+<span class="text-slate-600">2026 <b>Global Climate Agreement</b> Implementation Details</span>
+<span class="text-xs text-slate-400">Popular Search</span>
+</div>
+<div class="p-3 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center justify-between">
+<span class="text-slate-600"><b>Sustainable Energy</b> Growth in Southeast Asia</span>
+<span class="text-xs text-slate-400">Recent Search</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Boolean Search -->
+<div id="boolean-search" class="search-mode-container hidden">
+<div class="space-y-6 max-w-4xl mx-auto">
+<!-- Rules Header -->
+<div class="text-white mb-4">
+<p class="text-sm font-semibold text-white/80">Build your search with multiple rules</p>
+</div>
+<!-- Rules Container -->
+<div id="boolean-rules" class="space-y-3">
+<!-- Rules will be dynamically created by JavaScript -->
+</div>
+
+<!-- Search Controls -->
+<div class="flex gap-3 justify-center pt-4">
+<button id="execute-boolean-search" class="px-8 py-3 bg-white text-indigo-600 rounded-lg font-bold hover:bg-slate-100 transition-colors flex items-center space-x-2">
+<span class="iconify" data-icon="heroicons:magnifying-glass"></span>
+<span>Search</span>
+</button>
+<button id="reset-boolean-search" class="px-6 py-3 bg-white/20 text-white rounded-lg font-semibold hover:bg-white/30 transition-colors border border-white/30">
+Reset
+</button>
+</div>
+
+<!-- Live Query Preview -->
+<div class="bg-white/5 border border-white/20 rounded-xl p-4 backdrop-blur-sm" id="query-preview">
+<p class="text-xs text-white/60 uppercase tracking-widest font-semibold mb-3">Live Query Preview</p>
+<p class="text-white/90 font-mono text-sm break-all leading-relaxed" id="query-preview-text">
+<span class="text-white/40">Your boolean expression will appear here...</span>
+</p>
+</div>
+</div>
+</div>
+<div class="flex flex-wrap justify-center gap-3 text-sm text-slate-400">
+<span>Recommended Keywords:</span>
+<a class="hover:text-white transition-colors underline decoration-slate-600" href="#">Space Exploration 2.0</a>
+<a class="hover:text-white transition-colors underline decoration-slate-600" href="#">2026 Winter Games</a>
+</div>
+</div>
+</section>
+<!-- Content Grid -->
+<div class="grid grid-cols-12 gap-8">
+<!-- Left Sidebar: Filters -->
+<aside class="col-span-12 lg:col-span-3 space-y-6 sticky top-10">
+<div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-bold text-slate-900">Refined Filters</h3>
+<button class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">Reset</button>
+</div>
+<div class="space-y-6">
+<!-- Date Filter -->
+<div class="space-y-3">
+<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Publish Date (2026)</label>
+<div class="grid grid-cols-2 gap-2" id="date-filter">
+<button class="date-filter-btn px-3 py-2 text-xs bg-indigo-50 text-indigo-700 font-semibold rounded-xl border border-indigo-100 hover:border-indigo-300 active" data-value="24h">Last 24 Hours</button>
+<button class="date-filter-btn px-3 py-2 text-xs bg-white text-slate-600 font-semibold rounded-xl border border-slate-200 hover:border-slate-300" data-value="week">Last Week</button>
+<button class="date-filter-btn px-3 py-2 text-xs bg-white text-slate-600 font-semibold rounded-xl border border-slate-200 hover:border-slate-300" data-value="month">Last Month</button>
+<button class="date-filter-btn px-3 py-2 text-xs bg-white text-slate-600 font-semibold rounded-xl border border-slate-200 hover:border-slate-300" data-value="custom">Custom</button>
+</div>
+</div>
+<!-- Content Type -->
+<div class="space-y-3">
+<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Content Type</label>
+<div class="space-y-2">
+<label class="flex items-center space-x-3 cursor-pointer group">
+<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500" checked/>
+<span class="text-sm text-slate-700 font-medium">In-Depth Analysis</span>
+</label>
+<label class="flex items-center space-x-3 cursor-pointer group">
+<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
+<span class="text-sm text-slate-700 font-medium">Breaking News</span>
+</label>
+<label class="flex items-center space-x-3 cursor-pointer group">
+<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
+<span class="text-sm text-slate-700 font-medium">Data Report</span>
+</label>
+</div>
+</div>
+<!-- Sentiment Bias -->
+<div class="space-y-3">
+<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sentiment</label>
+<div class="flex items-center justify-between text-[1.5rem] px-2" id="sentiment-filter">
+<button class="sentiment-btn hover:scale-125 transition-transform grayscale hover:grayscale-0 opacity-50 hover:opacity-100" data-sentiment="negative" title="Negative">😡</button>
+<button class="sentiment-btn hover:scale-125 transition-transform grayscale hover:grayscale-0 opacity-50 hover:opacity-100" data-sentiment="concerned" title="Concerned">😟</button>
+<button class="sentiment-btn hover:scale-125 transition-transform grayscale hover:grayscale-0 opacity-100 active" data-sentiment="neutral" title="Neutral">😐</button>
+<button class="sentiment-btn hover:scale-125 transition-transform grayscale hover:grayscale-0 opacity-50 hover:opacity-100" data-sentiment="positive" title="Positive">😊</button>
+<button class="sentiment-btn hover:scale-125 transition-transform grayscale hover:grayscale-0 opacity-50 hover:opacity-100" data-sentiment="excellent" title="Excellent">🤩</button>
+</div>
+<div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex">
+<div class="h-full bg-rose-400" style="width: 15%"></div>
+<div class="h-full bg-slate-300" style="width: 30%"></div>
+<div class="h-full bg-emerald-400" style="width: 55%"></div>
+</div>
+</div>
+<!-- Location Filter -->
+<div class="space-y-3">
+<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Geographic Region</label>
+<div class="space-y-2">
+<label class="flex items-center space-x-3 cursor-pointer group">
+<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
+<span class="text-sm text-slate-700 font-medium">North America</span>
+</label>
+<label class="flex items-center space-x-3 cursor-pointer group">
+<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
+<span class="text-sm text-slate-700 font-medium">Europe</span>
+</label>
+<label class="flex items-center space-x-3 cursor-pointer group">
+<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
+<span class="text-sm text-slate-700 font-medium">Asia-Pacific</span>
+</label>
+<label class="flex items-center space-x-3 cursor-pointer group">
+<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
+<span class="text-sm text-slate-700 font-medium">Middle East & Africa</span>
+</label>
+<label class="flex items-center space-x-3 cursor-pointer group">
+<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
+<span class="text-sm text-slate-700 font-medium">Latin America</span>
+</label>
+</div>
+</div>
+</div>
+<button class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors mt-6" id="apply-filters-btn">
+Apply Filters
+</button>
+</div>
+<div class="bg-indigo-600 p-6 rounded-3xl text-white shadow-lg space-y-4">
+<p class="text-sm font-medium opacity-80">Today's Sentiment Index</p>
+<div class="text-3xl font-bold">Global Optimism +24%</div>
+<p class="text-xs opacity-70">Based on analysis of 1.2M articles collected over the past 24 hours.</p>
+<button class="w-full py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-bold transition-colors">View Full Report</button>
+</div>
+</aside>
+<!-- Center: Search Results -->
+<main class="col-span-12 lg:col-span-6 space-y-6">
+<div class="flex items-center justify-between px-2">
+<span class="text-sm font-bold text-slate-500 font-mono italic">Found approximately 124,000 matching results (0.32s)</span>
+<div class="flex items-center space-x-2 text-sm">
+<span class="text-slate-400">Sort by:</span>
+<select class="bg-transparent font-bold text-slate-900 outline-none border-none cursor-pointer">
+<option>Newest First</option>
+<option>Relevance</option>
+</select>
+</div>
+</div>
+<!-- Result Card 1 -->
+<article class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all group">
+<div class="flex gap-6">
+<div class="flex-1 space-y-3">
+<div class="flex items-center space-x-2">
+<span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase rounded-lg">Energy & Environment</span>
+<span class="text-xs text-slate-400 font-medium">January 27, 2026 09:45AM</span>
+</div>
+<h2 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer news-title" 
+                data-id="1"
+                data-category="Energy & Environment"
+                data-date="January 27, 2026 09:45AM"
+                data-title="Global Superconducting Energy Storage Network Begins Pilot Phase in Northern Europe, Cutting Cross-Border Power Loss by 40%"
+                data-sentiment="Positive Sentiment (0.85)"
+                data-sentiment-icon="😊"
+                data-comments="1.4k"
+                data-image="https://modao.cc/agent-py/media/generated_images/2026-01-27/877841c9f8a04602b3bea22e897dc4ea.jpg">
+                Global Superconducting Energy Storage Network Begins Pilot Phase in Northern Europe, Cutting Cross-Border Power Loss by 40%
+              </h2>
+<p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
+                Today, the superconducting grid project led by the International Energy Organization officially completed its first phase of grid connection. The project marks a breakthrough in core technology and provides a new solution for clean energy transmission around the Arctic Circle. Within the next three years, this technology is expected to...
+              </p>
+<div class="flex items-center justify-between pt-4 border-t border-slate-50">
+<div class="flex items-center space-x-4">
+<span class="flex items-center text-xs text-slate-500 font-semibold">
+<span class="iconify w-4 h-4 mr-1 text-emerald-500" data-icon="heroicons:face-smile"></span>
+                    Positive Sentiment (0.85)
+                  </span>
+<span class="flex items-center text-xs text-slate-500 font-semibold">
+<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:chat-bubble-left-right"></span>
+                    1.4k Comments
+                  </span>
+</div>
+<div class="flex items-center space-x-2">
+<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
+<span class="iconify w-5 h-5" data-icon="heroicons:bookmark"></span>
+</button>
+<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
+<span class="iconify w-5 h-5" data-icon="heroicons:share"></span>
+</button>
+</div>
+</div>
+</div>
+<div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
+<img alt="News Image" class="w-full h-full object-cover" id="img-2" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/877841c9f8a04602b3bea22e897dc4ea.jpg"/>
+</div>
+</div>
+</article>
+<!-- Result Card 2 -->
+<article class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all group">
+<div class="flex gap-6">
+<div class="flex-1 space-y-3">
+<div class="flex items-center space-x-2">
+<span class="px-2.5 py-1 bg-violet-100 text-violet-700 text-[10px] font-black uppercase rounded-lg">Cutting-Edge Tech</span>
+<span class="text-xs text-slate-400 font-medium">January 27, 2026 08:30AM</span>
+</div>
+<h2 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer news-title"
+                data-id="2"
+                data-category="Cutting-Edge Tech"
+                data-date="January 27, 2026 08:30AM"
+                data-title="Universal Quantum Computers Enter External Testing Phase, Programmers Relearn Fundamental Principles"
+                data-sentiment="Objective & Factual (0.92)"
+                data-sentiment-icon="😐"
+                data-comments="890"
+                data-image="https://modao.cc/agent-py/media/generated_images/2026-01-27/d45ed7a9e6e44a669b5526420c09d836.jpg">
+                Universal Quantum Computers Enter External Testing Phase, Programmers Relearn Fundamental Principles
+              </h2>
+<p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
+                With IBM and Google's joint lab announcing that the Tianzhou quantum chip series completed 10,000 connectivity tests, the commercialization of the quantum era is gradually unfolding from these laboratories. Tech giants are busy forming new algorithm teams to cope with the upcoming computing power overflow...
+              </p>
+<div class="flex items-center justify-between pt-4 border-t border-slate-50">
+<div class="flex items-center space-x-4">
+<span class="flex items-center text-xs text-slate-500 font-semibold">
+<span class="iconify w-4 h-4 mr-1 text-amber-500" data-icon="heroicons:beaker"></span>
+                    Objective & Factual (0.92)
+                  </span>
+<span class="flex items-center text-xs text-slate-500 font-semibold">
+<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:fire-solid"></span>
+                    Rapidly Growing
+                  </span>
+</div>
+<div class="flex items-center space-x-2">
+<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
+<span class="iconify w-5 h-5" data-icon="heroicons:bookmark"></span>
+</button>
+<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
+<span class="iconify w-5 h-5" data-icon="heroicons:share"></span>
+</button>
+</div>
+</div>
+</div>
+<div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
+<img alt="Tech Image" class="w-full h-full object-cover" id="img-3" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/d45ed7a9e6e44a669b5526420c09d836.jpg"/>
+</div>
+</div>
+</article>
+<!-- Result Card 3 -->
+<article class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all group">
+<div class="flex gap-6">
+<div class="flex-1 space-y-3">
+<div class="flex items-center space-x-2">
+<span class="px-2.5 py-1 bg-cyan-100 text-cyan-700 text-[10px] font-black uppercase rounded-lg">Climate & Environment</span>
+<span class="text-xs text-slate-400 font-medium">January 27, 2026 07:15AM</span>
+</div>
+<h2 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer">
+                Global Carbon Sequestration Project Reaches Milestone: 500 Million Tons Stored Annually
+              </h2>
+<p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
+                The United Nations Climate Initiative announced that the world's largest carbon capture facility in Iceland has successfully stored over 500 million tons of CO₂ annually. This breakthrough represents a turning point in climate change mitigation strategies. Scientists estimate that this technology could reduce atmospheric carbon...
+              </p>
+<div class="flex items-center justify-between pt-4 border-t border-slate-50">
+<div class="flex items-center space-x-4">
+<span class="flex items-center text-xs text-slate-500 font-semibold">
+<span class="iconify w-4 h-4 mr-1 text-emerald-500" data-icon="heroicons:face-smile"></span>
+                    Positive Sentiment (0.88)
+                  </span>
+<span class="flex items-center text-xs text-slate-500 font-semibold">
+<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:chat-bubble-left-right"></span>
+                    3.2k Comments
+                  </span>
+</div>
+<div class="flex items-center space-x-2">
+<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
+<span class="iconify w-5 h-5" data-icon="heroicons:bookmark"></span>
+</button>
+<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
+<span class="iconify w-5 h-5" data-icon="heroicons:share"></span>
+</button>
+</div>
+</div>
+</div>
+<div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
+<img alt="Climate Image" class="w-full h-full object-cover" id="img-4" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/climate-milestone.jpg"/>
+</div>
+</div>
+</article>
+<!-- Result Card 4 -->
+<article class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all group">
+<div class="flex gap-6">
+<div class="flex-1 space-y-3">
+<div class="flex items-center space-x-2">
+<span class="px-2.5 py-1 bg-pink-100 text-pink-700 text-[10px] font-black uppercase rounded-lg">Healthcare & Science</span>
+<span class="text-xs text-slate-400 font-medium">January 26, 2026 11:20PM</span>
+</div>
+<h2 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer">
+                Personalized Gene Therapy Becomes Mainstream: Success Rate Exceeds 95% for Common Diseases
+              </h2>
+<p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
+                Leading medical institutions in Singapore and Switzerland have jointly published a groundbreaking study showing that personalized gene therapy can achieve 95% recovery rates for previously incurable genetic disorders. The cost per treatment has dropped by 60% year-over-year, making it accessible to patients worldwide...
+              </p>
+<div class="flex items-center justify-between pt-4 border-t border-slate-50">
+<div class="flex items-center space-x-4">
+<span class="flex items-center text-xs text-slate-500 font-semibold">
+<span class="iconify w-4 h-4 mr-1 text-emerald-500" data-icon="heroicons:face-smile"></span>
+                    Positive Sentiment (0.91)
+                  </span>
+<span class="flex items-center text-xs text-slate-500 font-semibold">
+<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:fire-solid"></span>
+                    Trending Globally
+                  </span>
+</div>
+<div class="flex items-center space-x-2">
+<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
+<span class="iconify w-5 h-5" data-icon="heroicons:bookmark"></span>
+</button>
+<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
+<span class="iconify w-5 h-5" data-icon="heroicons:share"></span>
+</button>
+</div>
+</div>
+</div>
+<div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
+<img alt="Healthcare Image" class="w-full h-full object-cover" id="img-5" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/gene-therapy.jpg"/>
+</div>
+</div>
+</article>
+<!-- Result Card 5 -->
+<article class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all group">
+<div class="flex gap-6">
+<div class="flex-1 space-y-3">
+<div class="flex items-center space-x-2">
+<span class="px-2.5 py-1 bg-orange-100 text-orange-700 text-[10px] font-black uppercase rounded-lg">Economics & Markets</span>
+<span class="text-xs text-slate-400 font-medium">January 26, 2026 03:45PM</span>
+</div>
+<h2 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer">
+                World GDP Growth Accelerates: 4.2% Expansion Driven by Green Technology Investments
+              </h2>
+<p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
+                The IMF released its latest economic forecast showing that global GDP growth has surpassed expectations, with renewable energy and quantum computing sectors leading the expansion. Emerging markets in Asia and Africa are showing particularly strong performance, contributing 60% of the total growth...
+              </p>
+<div class="flex items-center justify-between pt-4 border-t border-slate-50">
+<div class="flex items-center space-x-4">
+<span class="flex items-center text-xs text-slate-500 font-semibold">
+<span class="iconify w-4 h-4 mr-1 text-emerald-500" data-icon="heroicons:face-smile"></span>
+                    Positive Sentiment (0.79)
+                  </span>
+<span class="flex items-center text-xs text-slate-500 font-semibold">
+<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:chat-bubble-left-right"></span>
+                    2.8k Comments
+                  </span>
+</div>
+<div class="flex items-center space-x-2">
+<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
+<span class="iconify w-5 h-5" data-icon="heroicons:bookmark"></span>
+</button>
+<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
+<span class="iconify w-5 h-5" data-icon="heroicons:share"></span>
+</button>
+</div>
+</div>
+</div>
+<div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
+<img alt="Economics Image" class="w-full h-full object-cover" id="img-6" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/gdp-growth.jpg"/>
+</div>
+</div>
+</article>
+
+</main>
+<!-- Right Sidebar: Live Pulse -->
+<aside class="col-span-12 lg:col-span-3 space-y-6 sticky top-10">
+<div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="bg-slate-50 p-4 border-b border-slate-200 flex items-center space-x-2">
+<div class="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
+<h3 class="font-bold text-slate-900 text-sm">Live Breaking News</h3>
+</div>
+<div class="h-[500px] overflow-y-auto hide-scrollbar p-2">
+<div class="space-y-4">
+<!-- Item 1 -->
+<div class="p-4 hover:bg-slate-50 rounded-2xl transition-colors cursor-pointer border border-transparent hover:border-slate-100">
+<div class="flex justify-between items-center mb-1">
+<span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase">International News</span>
+<span class="text-[10px] text-slate-400">2 minutes ago</span>
+</div>
+<p class="text-sm text-slate-700 font-semibold line-clamp-2">East African Community Announces Unified Digital Currency Settlement System</p>
+</div>
+<!-- Item 2 -->
+<div class="p-4 hover:bg-slate-50 rounded-2xl transition-colors cursor-pointer border border-transparent hover:border-slate-100">
+<div class="flex justify-between items-center mb-1">
+<span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded uppercase">Entertainment</span>
+<span class="text-[10px] text-slate-400">12 minutes ago</span>
+</div>
+<p class="text-sm text-slate-700 font-semibold line-clamp-2">First AI-Generated Feature Film Receives Venice Nomination</p>
+</div>
+<!-- Item 3 -->
+<div class="p-4 hover:bg-slate-50 rounded-2xl transition-colors cursor-pointer border border-transparent hover:border-slate-100">
+<div class="flex justify-between items-center mb-1">
+<span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded uppercase">Sports</span>
+<span class="text-[10px] text-slate-400">15 minutes ago</span>
+</div>
+<p class="text-sm text-slate-700 font-semibold line-clamp-2">2026 World Cup Asia Qualifiers Latest Standings Released</p>
+</div>
+<!-- Item 4 -->
+<div class="p-4 hover:bg-slate-50 rounded-2xl transition-colors cursor-pointer border border-transparent hover:border-slate-100">
+<div class="flex justify-between items-center mb-1">
+<span class="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded uppercase">Breaking News</span>
+<span class="text-[10px] text-slate-400">30 minutes ago</span>
+</div>
+<p class="text-sm text-slate-700 font-semibold line-clamp-2">Major Larsen Ice Shelf Collapse in Antarctica, Alert Issued</p>
+</div>
+<!-- Item 5 -->
+<div class="p-4 hover:bg-slate-50 rounded-2xl transition-colors cursor-pointer border border-transparent hover:border-slate-100">
+<div class="flex justify-between items-center mb-1">
+<span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase">Technology</span>
+<span class="text-[10px] text-slate-400">1 hour ago</span>
+</div>
+<p class="text-sm text-slate-700 font-semibold line-clamp-2">Solid-State Battery Energy Density Reaches 800Wh/kg</p>
+</div>
+</div>
+</div>
+<div class="p-4 bg-white border-t border-slate-100 text-center">
+<button class="text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">View Archive History →</button>
+</div>
+</div>
+<div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+<h3 class="font-bold text-slate-900 mb-4">Core Topics</h3>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># Renewable Energy</span>
+<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># 2026 Carbon Neutral</span>
+<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># Superconductor Tech</span>
+<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># Grid Modernization</span>
+<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># Climate Diplomacy</span>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Floating Action Button -->
+<div class="fixed bottom-10 right-10 flex flex-col items-center space-y-4">
+<button class="group relative flex items-center justify-center w-16 h-16 bg-indigo-600 text-white rounded-full shadow-2xl hover:scale-110 transition-transform focus:outline-none" id="summary-btn">
+<span class="iconify w-8 h-8" data-icon="heroicons:sparkles-solid"></span>
+<div class="absolute -top-12 right-0 hidden group-hover:block bg-slate-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap">
+        Summarize all viewpoints on this page
+      </div>
+</button>
+</div>
+<!-- Summary Modal (Hidden by default) -->
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6 transition-opacity opacity-0 pointer-events-none" id="modal-overlay">
+<div class="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden transform transition-all translate-y-8">
+<div class="p-8 space-y-6">
+<div class="flex justify-between items-center">
+<div class="flex items-center space-x-3">
+<span class="iconify w-8 h-8 text-indigo-600" data-icon="heroicons:view-columns"></span>
+<h2 class="text-2xl font-black text-slate-900">AI Smart Summary Area</h2>
+</div>
+<button class="p-2 text-slate-400 hover:text-slate-900" id="close-modal">
+<span class="iconify w-6 h-6" data-icon="heroicons:x-mark"></span>
+</button>
+</div>
+<div class="w-full h-48 border border-slate-50 rounded-2xl bg-slate-50" id="summary-chart"></div>
+<div class="space-y-4">
+<div class="flex space-x-4">
+<div class="w-1 bg-indigo-500 rounded-full"></div>
+<p class="text-slate-600 leading-relaxed">
+              Based on your current search "2026 Sustainable Energy", GlobalSearch has identified 3 core trends: <b>Strengthened Cross-border Collaboration</b>, <b>Ultra-Low Loss Transmission Technology Breakthrough</b>, and <b>Private Investment Surge Under Policy Guidance</b>. The overall sentiment is highly confident.
+            </p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+<span class="text-[10px] font-bold text-emerald-600 block mb-1">Key Advantages</span>
+<p class="text-xs text-slate-700 font-semibold line-clamp-2">The Nordic superconductor project sets a benchmark for global energy interconnection with high replication value.</p>
+</div>
+<div class="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+<span class="text-[10px] font-bold text-amber-600 block mb-1">Potential Obstacles</span>
+<p class="text-xs text-slate-700 font-semibold line-clamp-2">The high cost of quantum technology proliferation remains a barrier for developing countries.</p>
+</div>
+</div>
+</div>
+<button class="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center space-x-2 active:scale-95 transition-transform">
+<span class="iconify w-5 h-5" data-icon="heroicons:newspaper"></span>
+<span>Export Full Analysis Report (PDF)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- News Detail Modal -->
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-6 transition-opacity opacity-0 pointer-events-none" id="news-detail-overlay">
+<div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl overflow-hidden transform transition-all translate-y-8">
+<div class="overflow-y-auto max-h-[90vh] hide-scrollbar">
+<!-- Header -->
+<div class="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 p-6 flex justify-between items-start z-10">
+<div class="flex-1">
+<span class="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-black uppercase rounded-lg" id="detail-category">Category</span>
+<h1 class="text-3xl font-black text-slate-900 mt-3 leading-tight" id="detail-title">News Title</h1>
+<div class="flex items-center space-x-4 mt-3 text-sm text-slate-500">
+<span id="detail-date">Date</span>
+<span>•</span>
+<span class="flex items-center">
+<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:clock"></span>
+5 min read
+</span>
+</div>
+</div>
+<button class="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" id="close-news-detail">
+<span class="iconify w-6 h-6" data-icon="heroicons:x-mark"></span>
+</button>
+</div>
+
+<!-- Featured Image -->
+<div class="w-full h-64 bg-slate-100 overflow-hidden">
+<img class="w-full h-full object-cover" id="detail-image" src="" alt="News Image"/>
+</div>
+
+<!-- Content -->
+<div class="p-8 space-y-6">
+<!-- Sentiment Badge -->
+<div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+<div class="flex items-center space-x-3">
+<span class="text-2xl" id="detail-sentiment-icon">😊</span>
+<div>
+<p class="text-xs text-slate-500 font-medium">Sentiment Analysis</p>
+<p class="text-sm font-bold text-slate-900" id="detail-sentiment">Positive (0.85)</p>
+</div>
+</div>
+<div class="flex items-center space-x-2 text-slate-500">
+<span class="iconify w-5 h-5" data-icon="heroicons:chat-bubble-left-right"></span>
+<span class="font-semibold" id="detail-comments">0</span>
+</div>
+</div>
+
+<!-- Article Body -->
+<div class="prose prose-slate max-w-none">
+<p class="text-lg text-slate-700 leading-relaxed" id="detail-content">
+Article content will be displayed here...
+</p>
+</div>
+
+<!-- Key Points -->
+<div class="bg-indigo-50 border-l-4 border-indigo-500 p-6 rounded-r-xl space-y-3">
+<h3 class="font-bold text-indigo-900 flex items-center">
+<span class="iconify w-5 h-5 mr-2" data-icon="heroicons:light-bulb"></span>
+Key Takeaways
+</h3>
+<ul class="space-y-2 text-sm text-slate-700" id="detail-keypoints">
+<li>• Key point will be displayed here</li>
+</ul>
+</div>
+
+<!-- Tags -->
+<div class="flex flex-wrap gap-2" id="detail-tags">
+<span class="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">#Technology</span>
+</div>
+
+<!-- Actions -->
+<div class="flex items-center justify-between pt-6 border-t border-slate-100">
+<div class="flex items-center space-x-2">
+<button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-sm transition-colors flex items-center space-x-2">
+<span class="iconify w-5 h-5" data-icon="heroicons:bookmark"></span>
+<span>Save</span>
+</button>
+<button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-sm transition-colors flex items-center space-x-2">
+<span class="iconify w-5 h-5" data-icon="heroicons:share"></span>
+<span>Share</span>
+</button>
+</div>
+<button class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-colors">
+Read Full Article →
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="mt-20 border-t border-slate-200 bg-white py-12">
+<div class="max-w-[1440px] mx-auto px-10 grid grid-cols-1 md:grid-cols-4 gap-12">
+<div class="space-y-4">
+<div class="flex items-center space-x-2">
+<span class="iconify w-6 h-6 text-indigo-600" data-icon="heroicons:globe-alt-solid"></span>
+<span class="text-lg font-bold">GlobalSearch</span>
+</div>
+<p class="text-xs text-slate-400 leading-loose">
+          2026 © GlobalSearch. <br/>
+          Real-time cross-language, sentiment-aware news search engine.<br/>
+          Data Archive ID: GP-2026-X8
+        </p>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest">Product</h4>
+<ul class="text-sm text-slate-500 space-y-2">
+<li><a class="hover:text-indigo-600" href="#">Pro Subscription</a></li>
+<li><a class="hover:text-indigo-600" href="#">API for Developers</a></li>
+<li><a class="hover:text-indigo-600" href="#">Sentiment Database</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest">Resources</h4>
+<ul class="text-sm text-slate-500 space-y-2">
+<li><a class="hover:text-indigo-600" href="#">Sentiment Analysis Whitepaper</a></li>
+<li><a class="hover:text-indigo-600" href="#">Privacy & Ethics Standards</a></li>
+<li><a class="hover:text-indigo-600" href="#">Community Forum</a></li>
+</ul>
+</div>
+<div class="space-y-4">
+<h4 class="font-bold text-slate-900 text-sm uppercase tracking-widest">Follow Us</h4>
+<div class="flex space-x-4">
+<button class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all">
+<span class="iconify" data-icon="ri:twitter-x-fill"></span>
+</button>
+<button class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all">
+<span class="iconify" data-icon="ri:linkedin-fill"></span>
+</button>
+<button class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all">
+<span class="iconify" data-icon="ri:github-fill"></span>
+</button>
+</div>
+</div>
+</div>
+</footer>
+<script>
+    // Modal Logic
+    const summaryBtn = document.getElementById('summary-btn');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const closeModal = document.getElementById('close-modal');
+    const modalContent = modalOverlay.querySelector('.bg-white');
+
+    summaryBtn.onclick = () => {
+      modalOverlay.classList.remove('opacity-0', 'pointer-events-none');
+      modalContent.classList.remove('translate-y-8');
+      initModalChart();
+    };
+
+    closeModal.onclick = () => {
+      modalOverlay.classList.add('opacity-0', 'pointer-events-none');
+      modalContent.classList.add('translate-y-8');
+    };
+
+    // ECharts Implementation
+    function initMiniChart() {
+      const chartDom = document.getElementById('mini-chart');
+      if (!chartDom) {
+        console.warn('mini-chart element not found');
+        return;
+      }
+      const myChart = echarts.init(chartDom);
+      const option = {
+        grid: { top: 0, bottom: 0, left: 0, right: 0 },
+        xAxis: { type: 'category', show: false },
+        yAxis: { show: false },
+        series: [{
+          data: [120, 200, 150, 80, 70, 110, 130, 280, 220, 290],
+          type: 'line',
+          smooth: true,
+          showSymbol: false,
+          areaStyle: { color: 'rgba(99, 102, 241, 0.3)' },
+          lineStyle: { width: 3, color: '#818cf8' }
+        }]
+      };
+      myChart.setOption(option);
+    }
+
+    function initModalChart() {
+      setTimeout(() => {
+        const chartDom = document.getElementById('summary-chart');
+        if (!chartDom) {
+          console.warn('summary-chart element not found');
+          return;
+        }
+        const myChart = echarts.init(chartDom);
+        const option = {
+          radar: {
+            indicator: [
+              { name: 'Positivity', max: 100 },
+              { name: 'Credibility', max: 100 },
+              { name: 'Virality', max: 100 },
+              { name: 'Complexity', max: 100 },
+              { name: 'Impact', max: 100 }
+            ],
+            splitArea: { show: false },
+            axisLine: { lineStyle: { color: '#e2e8f0' } }
+          },
+          series: [{
+            type: 'radar',
+            data: [
+              {
+                value: [85, 92, 78, 40, 88],
+                name: 'Current Topic Characteristics',
+                areaStyle: { color: 'rgba(79, 70, 229, 0.4)' },
+                lineStyle: { color: '#4f46e5' },
+                itemStyle: { color: '#4f46e5' }
+              }
+            ]
+          }]
+        };
+        myChart.setOption(option);
+      }, 300);
+    }
+
+    window.onload = () => {
+      initMiniChart();
+      
+      // Date Filter functionality
+      const dateFilterBtns = document.querySelectorAll('.date-filter-btn');
+      dateFilterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          dateFilterBtns.forEach(b => {
+            b.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-100', 'active');
+            b.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
+          });
+          btn.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-100', 'active');
+          btn.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
+          console.log('Selected date filter:', btn.dataset.value);
+        });
+      });
+      
+      // Sentiment Filter functionality
+      const sentimentBtns = document.querySelectorAll('.sentiment-btn');
+      sentimentBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          // Remove active state from all buttons
+          sentimentBtns.forEach(b => {
+            b.classList.remove('opacity-100', 'active');
+            b.classList.add('opacity-50', 'grayscale');
+            b.style.filter = '';
+          });
+          // Add active state to clicked button
+          btn.classList.add('opacity-100', 'active');
+          btn.classList.remove('opacity-50', 'grayscale');
+          btn.style.filter = 'none';
+          console.log('Selected sentiment:', btn.dataset.sentiment);
+        });
+      });
+      
+      // News Detail Modal functionality
+      const newsDetailOverlay = document.getElementById('news-detail-overlay');
+      const newsDetailContent = newsDetailOverlay.querySelector('.bg-white');
+      const closeNewsDetail = document.getElementById('close-news-detail');
+      const newsTitles = document.querySelectorAll('.news-title');
+      
+      // Sample full content for each news
+      const newsContent = {
+        '1': {
+          content: `The International Energy Organization announced today that the superconducting grid project has successfully completed its first phase of grid connection in Northern Europe. This groundbreaking initiative represents a major breakthrough in clean energy transmission technology.
+          
+          The project utilizes advanced superconducting materials that allow electricity to flow with virtually zero resistance, reducing cross-border power transmission losses by an unprecedented 40%. This efficiency gain could save billions in energy costs annually while significantly reducing carbon emissions.
+          
+          Engineers working on the project report that the system has exceeded initial performance expectations. The superconducting cables, cooled to near absolute zero temperatures, have demonstrated remarkable stability even under peak load conditions.
+          
+          Over the next three years, the technology is expected to expand to other regions, potentially revolutionizing the global energy grid infrastructure. Energy ministers from 12 European nations have already expressed interest in adopting this technology.`,
+          keypoints: [
+            'First phase of superconducting grid successfully completed',
+            '40% reduction in cross-border power transmission losses',
+            'Near-zero resistance technology using advanced superconducting materials',
+            'Expansion to other regions planned over next 3 years',
+            '12 European nations interested in adopting the technology'
+          ]
+        },
+        '2': {
+          content: `IBM and Google's joint quantum computing laboratory has announced a major milestone: the Tianzhou quantum chip series has successfully completed 10,000 connectivity tests, bringing quantum computing significantly closer to practical commercialization.
+          
+          This achievement marks a turning point in the quantum computing industry. The Tianzhou chips demonstrate unprecedented stability and error correction capabilities, addressing one of the major obstacles to quantum computer deployment.
+          
+          Leading tech companies are now rushing to form specialized algorithm development teams. Traditional programming paradigms don't apply to quantum systems, requiring engineers to fundamentally rethink computational approaches.
+          
+          Industry experts predict that within 5 years, quantum computers could tackle problems currently impossible for classical computers, including drug discovery, climate modeling, and cryptography.`,
+          keypoints: [
+            '10,000 successful connectivity tests completed',
+            'Major advancement in quantum chip stability',
+            'Tech giants forming new algorithm development teams',
+            'Programmers must learn entirely new computational paradigms',
+            'Practical applications expected within 5 years'
+          ]
+        }
+      };
+      
+      newsTitles.forEach(title => {
+        title.addEventListener('click', () => {
+          const id = title.dataset.id;
+          const data = newsContent[id] || { content: 'Full content not available yet.', keypoints: [] };
+          
+          // Fill modal with data
+          document.getElementById('detail-category').textContent = title.dataset.category;
+          document.getElementById('detail-title').textContent = title.dataset.title;
+          document.getElementById('detail-date').textContent = title.dataset.date;
+          document.getElementById('detail-sentiment').textContent = title.dataset.sentiment;
+          document.getElementById('detail-sentiment-icon').textContent = title.dataset.sentimentIcon;
+          document.getElementById('detail-comments').textContent = title.dataset.comments;
+          document.getElementById('detail-image').src = title.dataset.image;
+          document.getElementById('detail-content').textContent = data.content;
+          
+          // Fill key points
+          const keypointsContainer = document.getElementById('detail-keypoints');
+          keypointsContainer.innerHTML = data.keypoints.map(point => `<li>• ${point}</li>`).join('');
+          
+          // Reset scroll position to top
+          const modalScrollContainer = newsDetailOverlay.querySelector('.overflow-y-auto');
+          if (modalScrollContainer) {
+            modalScrollContainer.scrollTop = 0;
+          }
+          
+          // Show modal
+          newsDetailOverlay.classList.remove('opacity-0', 'pointer-events-none');
+          newsDetailContent.classList.remove('translate-y-8');
+        });
+      });
+      
+      closeNewsDetail.onclick = () => {
+        newsDetailOverlay.classList.add('opacity-0', 'pointer-events-none');
+        newsDetailContent.classList.add('translate-y-8');
+      };
+      
+      // Close on backdrop click
+      newsDetailOverlay.addEventListener('click', (e) => {
+        if (e.target === newsDetailOverlay) {
+          newsDetailOverlay.classList.add('opacity-0', 'pointer-events-none');
+          newsDetailContent.classList.add('translate-y-8');
+        }
+      });
+      
+      // Search Mode Toggle Logic
+      const modeToggleButtons = document.querySelectorAll('.mode-toggle');
+      const freetextSearch = document.getElementById('freetext-search');
+      const booleanSearch = document.getElementById('boolean-search');
+      
+      modeToggleButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          // Update button states
+          modeToggleButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          // Update button styles
+          if (btn.id === 'mode-freetext') {
+            btn.style.backgroundColor = 'white';
+            btn.style.color = '#4f46e5';
+            btn.style.border = 'none';
+            
+            document.getElementById('mode-boolean').style.backgroundColor = 'rgba(255,255,255,0.2)';
+            document.getElementById('mode-boolean').style.color = 'white';
+            document.getElementById('mode-boolean').style.border = '2px solid rgba(255,255,255,0.3)';
+            
+            // Show free text, hide boolean
+            freetextSearch.classList.remove('hidden');
+            booleanSearch.classList.add('hidden');
+          } else {
+            btn.style.backgroundColor = 'rgba(255,255,255,0.2)';
+            btn.style.color = 'white';
+            btn.style.border = '2px solid rgba(255,255,255,0.3)';
+            
+            document.getElementById('mode-freetext').style.backgroundColor = 'rgba(255,255,255,0.2)';
+            document.getElementById('mode-freetext').style.color = 'white';
+            document.getElementById('mode-freetext').style.border = '2px solid rgba(255,255,255,0.3)';
+            
+            // Show boolean, hide free text
+            booleanSearch.classList.remove('hidden');
+            freetextSearch.classList.add('hidden');
+          }
+        });
+      });
+      
+      // Boolean Search Logic (New Rule-based Builder)
+      const booleanRules = document.getElementById('boolean-rules');
+      const executeBooleanBtn = document.getElementById('execute-boolean-search');
+      const resetBooleanBtn = document.getElementById('reset-boolean-search');
+      const queryPreview = document.getElementById('query-preview');
+      const queryPreviewText = document.getElementById('query-preview-text');
+      
+      // Create a new rule row
+      function createRuleRow(isFirst = false) {
+        const row = document.createElement('div');
+        row.className = 'boolean-rule-row flex gap-3 items-center bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/20';
+        
+        // Logical Operator (AND/OR/NOT)
+        const operatorSelect = document.createElement('select');
+        operatorSelect.className = 'rule-operator text-sm font-semibold px-3 py-2 rounded-lg border border-slate-400 cursor-pointer';
+        operatorSelect.style.backgroundColor = '#2d3748';
+        operatorSelect.style.color = 'white';
+        operatorSelect.style.minWidth = '100px';
+        operatorSelect.innerHTML = '<option value="AND">AND</option><option value="OR">OR</option><option value="NOT">NOT</option>';
+        if (isFirst) operatorSelect.style.display = 'none';
+        
+        // Keyword Input
+        const keywordInput = document.createElement('input');
+        keywordInput.className = 'rule-keyword flex-1 px-4 py-2 rounded-lg text-slate-900 outline-none text-sm placeholder:text-slate-400';
+        keywordInput.type = 'text';
+        keywordInput.placeholder = 'Enter keyword...';
+        
+        // Field Selector
+        const fieldSelect = document.createElement('select');
+        fieldSelect.className = 'rule-field text-sm font-semibold px-3 py-2 rounded-lg border border-slate-400 cursor-pointer';
+        fieldSelect.style.backgroundColor = '#2d3748';
+        fieldSelect.style.color = 'white';
+        fieldSelect.style.minWidth = '130px';
+        fieldSelect.innerHTML = `
+          <option value="">All Fields</option>
+          <option value="title">Title</option>
+          <option value="content">Content</option>
+          <option value="author">Author</option>
+          <option value="location">Location</option>
+        `;
+        
+        // Delete Button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-rule px-3 py-2 bg-red-500/20 text-red-200 rounded-lg hover:bg-red-500/40 transition-colors';
+        if (isFirst) deleteBtn.style.display = 'none';
+        deleteBtn.innerHTML = '<span class="iconify" data-icon="heroicons:x-mark"></span>';
+        deleteBtn.addEventListener('click', () => {
+          row.remove();
+          // Show + button on the new last row
+          const rows = booleanRules.querySelectorAll('.boolean-rule-row');
+          if (rows.length > 0) {
+            const lastRow = rows[rows.length - 1];
+            const lastAddBtn = lastRow.querySelector('.add-rule');
+            if (lastAddBtn) lastAddBtn.style.display = 'block';
+          }
+          updateQueryPreview();
+        });
+        
+        // Add Button
+        const addBtn = document.createElement('button');
+        addBtn.className = 'add-rule px-3 py-2 bg-emerald-500/20 text-emerald-200 rounded-lg hover:bg-emerald-500/40 transition-colors';
+        addBtn.innerHTML = '<span class="iconify" data-icon="heroicons:plus"></span>';
+        addBtn.addEventListener('click', () => {
+          // Hide + button on current row
+          addBtn.style.display = 'none';
+          // Create and add new row
+          const newRow = createRuleRow(false);
+          booleanRules.appendChild(newRow);
+          updateQueryPreview();
+        });
+        
+        // Update preview on any change
+        operatorSelect.addEventListener('change', updateQueryPreview);
+        keywordInput.addEventListener('input', updateQueryPreview);
+        fieldSelect.addEventListener('change', updateQueryPreview);
+        
+        row.appendChild(operatorSelect);
+        row.appendChild(keywordInput);
+        row.appendChild(fieldSelect);
+        row.appendChild(deleteBtn);
+        row.appendChild(addBtn);
+        
+        return row;
+      }
+      
+      // Update query preview in real-time
+      function updateQueryPreview() {
+        const rules = booleanRules.querySelectorAll('.boolean-rule-row');
+        if (rules.length === 0) return;
+        
+        let queryParts = [];
+        let hasValidRule = false;
+        
+        rules.forEach((row, index) => {
+          const operator = row.querySelector('.rule-operator').value;
+          const keyword = row.querySelector('.rule-keyword').value.trim();
+          const field = row.querySelector('.rule-field').value;
+          
+          if (keyword) {
+            hasValidRule = true;
+            let part = '';
+            
+            // Add operator from previous rule
+            if (index > 0) {
+              part += operator + ' ';
+            }
+            
+            // Build the expression
+            if (field) {
+              part += `"${keyword}" (${field})`;
+            } else {
+              part += `"${keyword}"`;
+            }
+            
+            queryParts.push(part);
+          }
+        });
+        
+        if (hasValidRule) {
+          const query = queryParts.join(' ');
+          queryPreviewText.innerHTML = `<span style="color: #a0aec0;">${query}</span>`;
+        } else {
+          queryPreviewText.innerHTML = `<span class="text-white/40">Your boolean expression will appear here...</span>`;
+        }
+      }
+      
+      // Execute boolean search
+      executeBooleanBtn.addEventListener('click', () => {
+        const rules = booleanRules.querySelectorAll('.boolean-rule-row');
+        let queryParts = [];
+        let hasValidRule = false;
+        
+        rules.forEach((row, index) => {
+          const operator = row.querySelector('.rule-operator').value;
+          const keyword = row.querySelector('.rule-keyword').value.trim();
+          const field = row.querySelector('.rule-field').value;
+          
+          if (keyword) {
+            hasValidRule = true;
+            let part = '';
+            
+            if (index > 0) {
+              part += operator + ' ';
+            }
+            
+            if (field) {
+              part += `"${keyword}" (${field})`;
+            } else {
+              part += `"${keyword}"`;
+            }
+            
+            queryParts.push(part);
+          }
+        });
+        
+        if (!hasValidRule) {
+          alert('Please enter at least one keyword');
+          return;
+        }
+        
+        const finalQuery = queryParts.join(' ');
+        console.log('Executing Boolean Search Query:', finalQuery);
+        
+        // Show feedback
+        executeBooleanBtn.textContent = 'Searching...';
+        executeBooleanBtn.disabled = true;
+        
+        setTimeout(() => {
+          executeBooleanBtn.innerHTML = '<span class="iconify" data-icon="heroicons:magnifying-glass"></span> <span>Search</span>';
+          executeBooleanBtn.disabled = false;
+          console.log('Search Results Updated (Demo)');
+          // In a real app, you would send this query to your backend
+        }, 1500);
+      });
+      
+      // Reset boolean search
+      resetBooleanBtn.addEventListener('click', () => {
+        booleanRules.innerHTML = '';
+        booleanRules.appendChild(createRuleRow(true));
+        queryPreviewText.innerHTML = `<span class="text-white/40">Your boolean expression will appear here...</span>`;
+      });
+      
+      // Initialize with first rule row
+      booleanRules.appendChild(createRuleRow(true));
+      
+      // Apply Filters button functionality
+      const applyFiltersBtn = document.getElementById('apply-filters-btn');
+      applyFiltersBtn.addEventListener('click', () => {
+        // Get all selected filters
+        const selectedContentTypes = [];
+        const contentTypeCheckboxes = document.querySelectorAll('label:has(input[type="checkbox"]) input[type="checkbox"]');
+        
+        contentTypeCheckboxes.forEach(checkbox => {
+          if (checkbox.checked) {
+            const label = checkbox.parentElement.querySelector('span');
+            if (label) {
+              selectedContentTypes.push(label.textContent.trim());
+            }
+          }
+        });
+        
+        const selectedDate = document.querySelector('.date-filter-btn.active');
+        const selectedSentiment = document.querySelector('.sentiment-btn.active');
+        
+        console.log('Applied Filters:', {
+          dateFilter: selectedDate ? selectedDate.dataset.value : 'none',
+          contentTypes: selectedContentTypes,
+          sentiment: selectedSentiment ? selectedSentiment.dataset.sentiment : 'none'
+        });
+        
+        // Show feedback to user
+        applyFiltersBtn.textContent = 'Filters Applied ✓';
+        applyFiltersBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+        applyFiltersBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+        
+        setTimeout(() => {
+          applyFiltersBtn.textContent = 'Apply Filters';
+          applyFiltersBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+          applyFiltersBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+        }, 2000);
+      });
+    };
+  </script>
+</body>
+</html>
