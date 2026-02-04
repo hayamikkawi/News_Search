@@ -5,9 +5,7 @@ import os
 # Centralized configuration management
 @dataclass(frozen=True)
 class CrawlerConfig:
-    user_agent: str = (
-        "TTDS-SearchEngine-Crawler (academic; contact: s2795693@deu.ac.uk)"
-    )
+    user_agent: str = "TTDS-SearchEngine-Crawler (academic; contact: s2795693@deu.ac.uk)"
     timeout_seconds: int = 15
     max_items_per_feed: int = 20
     sleep_seconds: float = 1.0
@@ -32,18 +30,12 @@ class MySQLConfig:
 class IndexerConfig:
     """Indexer Configuration"""
 
-    # Indexer Type: "http", "file", "dummy"
-    type: str = os.getenv("INDEXER_TYPE", "http")
-    # Base URL for HTTP Indexer
-    base_url: str = os.getenv("INDEXER_BASE_URL", "http://localhost:8080")
-    # HTTP timeout (seconds)
-    timeout: int = int(os.getenv("INDEXER_TIMEOUT", "30"))
-    # Output directory for file-based Indexer
-    output_dir: str = os.getenv("INDEXER_OUTPUT_DIR", "./indexer_input")
+    # Output directory for Indexer input
+    output_dir: str = os.getenv("INDEXER_OUTPUT_DIR", "../indexer/input")
+    # Output filename for Indexer
+    output_filename: str = os.getenv("INDEXER_OUTPUT_FILENAME", "docs.json")
     # Whether to save content to the database (False saves only metadata to save space)
-    save_content_to_db: bool = (
-        os.getenv("SAVE_CONTENT_TO_DB", "false").lower() == "true"
-    )
+    save_content_to_db: bool = os.getenv("SAVE_CONTENT_TO_DB", "false").lower() == "true"
 
 
 CONFIG = CrawlerConfig()
