@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
-#统一数据结构
+
+
+# Unified data structures
 @dataclass
 class RssEntry:
     url: str
     rss_title: Optional[str]
     rss_published_at: Optional[str]  # ISO8601
     feed_url: str
+
 
 @dataclass
 class FetchResult:
@@ -16,6 +19,7 @@ class FetchResult:
     html: Optional[str]
     error: Optional[str]
 
+
 @dataclass
 class ExtractResult:
     text_ok: bool
@@ -24,6 +28,7 @@ class ExtractResult:
     date: Optional[str]
     language: Optional[str]
     text: Optional[str]
+
 
 @dataclass
 class ArticleRecord:
