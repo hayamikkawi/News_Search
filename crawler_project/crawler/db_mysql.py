@@ -52,9 +52,7 @@ class MySQLDatabase:
     def initialize_pool(self):
         """Initialize connection pool"""
         try:
-            self.pool = pooling.MySQLConnectionPool(
-                pool_name="crawler_pool", pool_size=self.pool_size, **self.config
-            )
+            self.pool = pooling.MySQLConnectionPool(pool_name="crawler_pool", pool_size=self.pool_size, **self.config)
             logger.info(f"MySQL connection pool initialized, size: {self.pool_size}")
         except Error as e:
             logger.error(f"Failed to initialize MySQL connection pool: {e}")
@@ -103,9 +101,9 @@ class MySQLDatabase:
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS articles (
                         id INT AUTO_INCREMENT PRIMARY KEY,
-                        url VARCHAR(512) NOT NULL,
+                        url VARCHAR(255) NOT NULL,
                         final_url VARCHAR(512),
-                        feed_url VARCHAR(512),
+                        feed_url VARCHAR(255),
                         rss_title VARCHAR(512),
                         rss_published_at DATETIME NULL,
                         fetched_at DATETIME NOT NULL,
@@ -198,15 +196,11 @@ class MySQLDatabase:
                 text = extracted.get("text")
 
                 # Convert time formats
-                fetched_at = datetime.fromisoformat(
-                    article.fetched_at.replace("Z", "+00:00")
-                )
+                fetched_at = datetime.fromisoformat(article.fetched_at.replace("Z", "+00:00"))
                 rss_published = None
                 if article.rss_published_at:
                     try:
-                        rss_published = datetime.fromisoformat(
-                            article.rss_published_at.replace("Z", "+00:00")
-                        )
+                        rss_published = datetime.fromisoformat(article.rss_published_at.replace("Z", "+00:00"))
                     except Exception:
                         pass
 
@@ -275,15 +269,11 @@ class MySQLDatabase:
                 language = extracted.get("language")
 
                 # Convert time formats
-                fetched_at = datetime.fromisoformat(
-                    article.fetched_at.replace("Z", "+00:00")
-                )
+                fetched_at = datetime.fromisoformat(article.fetched_at.replace("Z", "+00:00"))
                 rss_published = None
                 if article.rss_published_at:
                     try:
-                        rss_published = datetime.fromisoformat(
-                            article.rss_published_at.replace("Z", "+00:00")
-                        )
+                        rss_published = datetime.fromisoformat(article.rss_published_at.replace("Z", "+00:00"))
                     except Exception:
                         pass
 
@@ -361,9 +351,7 @@ class MySQLDatabase:
                 return True
             except Error as e:
                 conn.rollback()
-                logger.error(
-                    f"Updating article content failed for doc_id {doc_id}: {e}"
-                )
+                logger.error(f"Updating article content failed for doc_id {doc_id}: {e}")
                 return False
             finally:
                 cursor.close()
@@ -430,9 +418,7 @@ class MySQLDatabase:
             finally:
                 cursor.close()
 
-    def get_articles(
-        self, feed_url: Optional[str] = None, limit: int = 100, offset: int = 0
-    ) -> List[Dict[str, Any]]:
+    def get_articles(self, feed_url: Optional[str] = None, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         """Get articles list"""
         with self.get_connection() as conn:
             cursor = conn.cursor(dictionary=True)
@@ -499,9 +485,7 @@ class MySQLDatabase:
                 stats["total_articles"] = cursor.fetchone()["count"]
 
                 # RSS sources count
-                cursor.execute(
-                    "SELECT COUNT(*) as count FROM rss_sources WHERE active = TRUE"
-                )
+                cursor.execute("SELECT COUNT(*) as count FROM rss_sources WHERE active = TRUE")
                 stats["active_sources"] = cursor.fetchone()["count"]
 
                 # Success rate
