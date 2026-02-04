@@ -1,4 +1,87 @@
-## Workflow
+## 1. Content
+
+- [1. Content](#1-content)
+- [2. Prerequisites](#2-prerequisites)
+- [3. Installation](#3-installation)
+  - [3.1. Install dependencies](#31-install-dependencies)
+  - [3.2. Prepare MySQL database](#32-prepare-mysql-database)
+  - [3.3. Configure environment variables](#33-configure-environment-variables)
+- [4. Configuration](#4-configuration)
+  - [4.1. Basic Configuration (.env)](#41-basic-configuration-env)
+- [5. Workflow](#5-workflow)
+- [6. File Structure](#6-file-structure)
+- [7. Data Flow Details](#7-data-flow-details)
+  - [7.1. Stage 1: Crawling Stage](#71-stage-1-crawling-stage)
+  - [7.2. Stage 2: Storage and Indexing Stage (Core Design)](#72-stage-2-storage-and-indexing-stage-core-design)
+- [8. Core Interface Details](#8-core-interface-details)
+  - [8.1. db_mysql.py - database interface](#81-db_mysqlpy---database-interface)
+  - [8.2. indexer_interface.py - Indexer interface](#82-indexer_interfacepy---indexer-interface)
+  - [8.3. coordinator.py - Coordinator](#83-coordinatorpy---coordinator)
+
+## 2. Prerequisites
+
+1. Python 3.8+
+2. MySQL 5.7+ or MySQL 8.0+
+3. Optional: Running Indexer service
+
+## 3. Installation
+
+### 3.1. Install dependencies
+
+```bash
+cd crawler_project
+pip install -r requirements.txt
+```
+
+Main dependencies:
+
+- `mysql-connector-python` - Offical MySQL database driver
+- `requests` - HTTP communication
+- `feedparser`, `trafilatura` - Core crawling libraries
+
+### 3.2. Prepare MySQL database
+
+```sql
+-- Login MySQL
+mysql -u root -p
+-- Login MySQL via Docker
+docker exec -it mysql_container_id mysql -u root -p
+
+-- Create database
+CREATE DATABASE ttds_search_engine CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Create user (optional)
+CREATE USER 'ttds_app'@'localhost' IDENTIFIED BY 'ttds#123';
+GRANT ALL PRIVILEGES ON ttds_search_engine.* TO 'ttds_app'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+### 3.3. Configure environment variables
+
+```bash
+cp .env.example .env
+```
+
+## 4. Configuration
+
+### 4.1. Basic Configuration (.env)
+
+```ini
+# MySQL Configuration
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=ttds_app
+MYSQL_PASSWORD=ttds#123
+MYSQL_DATABASE=ttds_search_engine
+MYSQL_POOL_SIZE=5
+
+# Indexer Configuration
+INDEXER_OUTPUT_DIR=../indexer/input
+INDEXER_OUTPUT_FILENAME=docs.json
+SAVE_CONTENT_TO_DB=false
+```
+
+## 5. Workflow
 
 ```
 ┌─────────────┐
@@ -51,7 +134,7 @@
                      └─────────────────────┘
 ```
 
-## File Structure
+## 6. File Structure
 
 ```
 crawler_project/
@@ -115,9 +198,9 @@ crawler_project/
 
 ```
 
-## Data Flow Details
+## 7. Data Flow Details
 
-### Stage 1: Crawling Stage
+### 7.1. Stage 1: Crawling Stage
 
 ```python
 RSS Feed → RSS Parser → Article URLs
@@ -128,7 +211,7 @@ RSS Feed → RSS Parser → Article URLs
          }
 ```
 
-### Stage 2: Storage and Indexing Stage (Core Design)
+### 7.2. Stage 2: Storage and Indexing Stage (Core Design)
 
 **Solution: Insert metadata first to get doc_id, then pass to indexer via JSON file**
 
@@ -171,9 +254,9 @@ Coordinator.process_article():
                 Results: If you want to store full text in the database as well
 ```
 
-## Core Interface Details
+## 8. Core Interface Details
 
-### 1. db_mysql.py - database interface
+### 8.1. db_mysql.py - database interface
 
 ```python
 def save_article_metadata_only(article: ArticleRecord) -> Optional[int]:
@@ -186,7 +269,7 @@ def get_article_by_id(doc_id: int) -> Optional[Dict]:
     """Query article by doc_id"""
 ```
 
-### 2. indexer_interface.py - Indexer interface
+### 8.2. indexer_interface.py - Indexer interface
 
 ```python
 class FileBasedIndexer:
@@ -218,7 +301,7 @@ def create_indexer(output_dir="../indexer/input",
                    output_filename="docs.json") -> FileBasedIndexer
 ```
 
-### 3. coordinator.py - Coordinator
+### 8.3. coordinator.py - Coordinator
 
 ```python
 class CrawlerCoordinator:
