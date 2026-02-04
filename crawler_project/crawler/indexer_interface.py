@@ -37,7 +37,7 @@ class FileBasedIndexer:
 
         self.output_dir = output_dir
         self.output_filename = output_filename
-        self.documents = []  # 累积文档列表
+        self.documents = []  # Accumulated document list
         os.makedirs(output_dir, exist_ok=True)
 
     def send_document(self, doc_id: int, content: str, metadata: dict = None) -> bool:
