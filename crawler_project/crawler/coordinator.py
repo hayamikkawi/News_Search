@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 from .models import ArticleRecord
 from .db_mysql import MySQLDatabase
-from .indexer_interface import IndexerInterface
+from .indexer_interface import FileBasedIndexer
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class CrawlerCoordinator:
     def __init__(
         self,
         database: MySQLDatabase,
-        indexer: IndexerInterface,
+        indexer: FileBasedIndexer,
         save_content_to_db: bool = False,
     ):
         """
@@ -46,7 +46,7 @@ class CrawlerCoordinator:
 
         Args:
             database: MySQL Database instance
-            indexer: Indexer Interface instance
+            indexer: FileBasedIndexer instance
             save_content_to_db: Whether to save content back to the database (default False to save storage space)
         """
         self.database = database
@@ -155,6 +155,14 @@ class CrawlerCoordinator:
             result = self.process_article(article)
             results.append(result)
 
+        # Flush documents to file if using FileBasedIndexer
+        try:
+            if hasattr(self.indexer, "flush"):
+                self.indexer.flush()
+                logger.info("Flushed documents to indexer output file")
+        except Exception as e:
+            logger.error(f"Error flushing documents: {e}")
+
         # Statistics
         total = len(results)
         metadata_saved = sum(1 for r in results if r.metadata_saved)
@@ -200,7 +208,7 @@ class CrawlerCoordinator:
 
 def create_coordinator(
     database: MySQLDatabase,
-    indexer: IndexerInterface,
+    indexer: FileBasedIndexer,
     save_content_to_db: bool = False,
 ) -> CrawlerCoordinator:
     """
@@ -208,7 +216,7 @@ def create_coordinator(
 
     Args:
         database: MySQL database instance
-        indexer: Indexer interface instance
+        indexer: FileBasedIndexer instance
         save_content_to_db: Whether to save content back to the database
 
     Returns:
