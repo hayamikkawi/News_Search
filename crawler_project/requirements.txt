@@ -3,6 +3,7 @@ requests
 trafilatura
 python-dateutil
 pyyaml
+mysql-connector-python
 
 
 
