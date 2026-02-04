@@ -1,29 +1,54 @@
 ## Workflow
 
 ```
-                    ┌─────────────────┐
-                    │   RSS Source    │
-                    └────────┬────────┘
-                             │
-                    ┌────────▼────────┐
-                    │   Crawler       │
-                    │   Pipeline      │
-                    └────────┬────────┘
-                             │
-                    ┌────────▼────────────┐
-                    │  ArticleRecord      │
-                    │  {metadata+content} │
-                    └────────┬────────────┘
-                             │
-                    ┌────────▼────────────┐
-                    │   Coordinator       │
-                    └──┬────────────────┬─┘
-                       │                │
-           ┌───────────▼─────┐       ┌──▼──────────────┐
-           │  Database       │       │    Indexer      │
-           │  (metadata)     │       │  (doc_id+text)  │
-           │  Returns doc_id │       │  Builds index   │
-           └─────────────────┘       └─────────────────┘
+┌─────────────┐
+│  RSS Feed   │
+└──────┬──────┘
+       │
+       ▼
+┌──────────────────────────────────┐
+│  Crawler Pipeline                │
+│  - Fetch HTML                    │
+│  - Extract content               │
+└──────┬───────────────────────────┘
+       │ ArticleRecord
+       ▼
+┌──────────────────────────────────┐
+│  Coordinator                     │
+│  1. Save metadata → DB (doc_id)  │
+│  2. Send to FileBasedIndexer     │
+└──┬──────────────────────────┬────┘
+   │                          │
+   ▼                          ▼
+┌─────────┐          ┌────────────────────┐
+│Database │          │FileBasedIndexer    │
+│(MySQL)  │          │ - Accumulate docs  │
+│         │          │ - Convert format   │
+│doc_id=1 │          │   {id, title,      │
+│doc_id=2 │          │    description,    │
+│doc_id=3 │          │    content}        │
+└─────────┘          │ - Flush to JSON    │
+                     └──────────┬─────────┘
+                                │
+                                ▼
+                     ┌─────────────────────┐
+                     │ ../indexer/input/   │
+                     │    docs.json        │
+                     │ [                   │
+                     │   {id:1, ...},      │
+                     │   {id:2, ...},      │
+                     │   {id:3, ...}       │
+                     │ ]                   │
+                     └──────────┬──────────┘
+                                │
+                                ▼
+                     ┌─────────────────────┐
+                     │  Indexer            │
+                     │  (indexer.py)       │
+                     │  - Read JSON        │
+                     │  - Preprocess       │
+                     │  - Build index      │
+                     └─────────────────────┘
 ```
 
 ## File Structure
