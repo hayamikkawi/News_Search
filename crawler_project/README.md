@@ -145,3 +145,67 @@ Coordinator.process_article():
 
                 Results: If you want to store full text in the database as well
 ```
+
+## Core Interface Details
+
+### 1. db_mysql.py - database interface
+
+```python
+def save_article_metadata_only(article: ArticleRecord) -> Optional[int]:
+    """Only save metadata, return doc_id"""
+
+def update_article_content(doc_id: int, text_content: str) -> bool:
+    """Update full article content"""
+
+def get_article_by_id(doc_id: int) -> Optional[Dict]:
+    """Query article by doc_id"""
+```
+
+### 2. indexer_interface.py - Indexer interface
+
+```python
+class FileBasedIndexer:
+    def __init__(output_dir, output_filename="docs.json")
+
+    def send_document(doc_id, content, metadata) -> bool
+        """Accumulate documents in memory, convert to Indexer format"""
+
+    def flush() -> bool
+        """Write all documents to JSON file"""
+
+    def clear() -> None
+        """Clear document cache"""
+
+    def delete_document(doc_id) -> bool
+        """Delete document from cache"""
+
+    def is_available() -> bool
+        """Check if output directory is writable"""
+
+    def get_document_count() -> int
+        """Get the current number of accumulated documents"""
+```
+
+**Factory function**：
+
+```python
+def create_indexer(output_dir="../indexer/input",
+                   output_filename="docs.json") -> FileBasedIndexer
+```
+
+### 3. coordinator.py - Coordinator
+
+```python
+class CrawlerCoordinator:
+    def __init__(database, indexer, save_content_to_db=False)
+
+    def process_article(article: ArticleRecord) -> ProcessResult:
+        """Process a single article
+        1. Save metadata to DB → doc_id
+        2. Send (doc_id, content) to Indexer
+        3. Optional: Save content to DB
+        """
+
+    def process_articles_batch(articles) -> List[ProcessResult]:
+        """Process articles in batch"""
+```
