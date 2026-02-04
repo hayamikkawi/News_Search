@@ -22,9 +22,9 @@ class MySQLConfig:
 
     host: str = os.getenv("MYSQL_HOST", "localhost")
     port: int = int(os.getenv("MYSQL_PORT", "3306"))
-    user: str = os.getenv("MYSQL_USER", "root")
-    password: str = os.getenv("MYSQL_PASSWORD", "")
-    database: str = os.getenv("MYSQL_DATABASE", "crawler_db")
+    user: str = os.getenv("MYSQL_USER", "ttds_app")
+    password: str = os.getenv("MYSQL_PASSWORD", "ttds#123")
+    database: str = os.getenv("MYSQL_DATABASE", "ttds_search_engine")
     pool_size: int = int(os.getenv("MYSQL_POOL_SIZE", "5"))
 
 
