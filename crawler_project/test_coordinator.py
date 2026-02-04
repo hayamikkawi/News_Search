@@ -35,12 +35,12 @@ def test_coordinator_workflow():
         password=MYSQL_CONFIG.password,
         database=MYSQL_CONFIG.database,
     )
-    logger.info("✓ Database created")
+    logger.info("Database created")
 
     # 2. Create indexer interface (dummy type for testing)
     logger.info("\n2. Creating indexer interface (dummy type for testing)...")
     indexer = create_indexer("dummy")
-    logger.info("✓ Indexer interface created")
+    logger.info("Indexer interface created")
 
     # 3. Create coordinator
     logger.info("\n3. Creating coordinator...")
@@ -49,7 +49,7 @@ def test_coordinator_workflow():
         indexer=indexer,
         save_content_to_db=False,  # Do not save content to DB
     )
-    logger.info("✓ Coordinator created")
+    logger.info("Coordinator created")
 
     # 4. Health check
     logger.info("\n4. Health check...")
@@ -80,7 +80,7 @@ def test_coordinator_workflow():
         )
         for i in range(1, 4)
     ]
-    logger.info(f"✓ Created {len(test_articles)} test articles")
+    logger.info(f"Created {len(test_articles)} test articles")
 
     # 6. Processing articles through coordinator
     logger.info("\n6. Processing articles through coordinator...")
@@ -105,12 +105,12 @@ def test_coordinator_workflow():
         if result.doc_id:
             article = db.get_article_by_id(result.doc_id)
             if article:
-                logger.info(f"✓ Found article in DB with doc_id={result.doc_id}")
+                logger.info(f"Found article in DB with doc_id={result.doc_id}")
                 logger.info(f"  Title: {article['title']}")
                 logger.info(f"  URL: {article['url']}")
                 logger.info(f"  Has content: {article['text_content'] is not None}")
             else:
-                logger.warning(f"✗ Article with doc_id={result.doc_id} not found in DB")
+                logger.warning(f"Article with doc_id={result.doc_id} not found in DB")
 
     logger.info("\n" + "=" * 60)
     logger.info("Test completed!")
@@ -136,10 +136,10 @@ def test_file_based_indexer():
     success = indexer.send_document(doc_id, content, metadata)
 
     if success:
-        logger.info("✓ Document sent successfully")
+        logger.info("Document sent successfully")
         logger.info(f"Check file: ./test_indexer_output/doc_{doc_id}.json")
     else:
-        logger.error("✗ Failed to send document")
+        logger.error("Failed to send document")
 
 
 if __name__ == "__main__":
