@@ -1,9 +1,10 @@
 from typing import Protocol
-from common_types import InvertedIndex, DocumentsStat
 
-# serves as a protocol (inteface)
-class QueryHandler(Protocol): 
-    def handle_query(query: str,
-                     index: InvertedIndex,
-                     documents_stat: DocumentsStat) -> list[str]:
-        ...
+from common_types import DocID, DocumentsStat, InvertedIndex
+
+
+# serves as a protocol (interface)
+class QueryHandler(Protocol):
+    def handle_query(
+        self, query: str, index: InvertedIndex, documents_stat: DocumentsStat
+    ) -> list[DocID]: ...

@@ -1,19 +1,23 @@
-from collections import defaultdict
-from query_handler import QueryHandler
-from common_types import InvertedIndex, DocumentsStat
 import math
-from preprocesser import preprocess_line
+from collections import defaultdict
 
-class FreeTextQueryHandler(QueryHandler): 
-    def rank_with_bm25(self,
-    query_tokens: list[str],
-    index: InvertedIndex,
-    doc_lengths: dict[str, int],
-    avg_doc_len: float,
-    N: int,
-    k1: float = 1.5,
-    b: float = 0.75) -> list[tuple[str, float]]:
-        scores = defaultdict(float)
+from common_types import DocID, DocumentsStat, InvertedIndex
+from preprocesser import preprocess_line
+from query_handler import QueryHandler
+
+
+class FreeTextQueryHandler(QueryHandler):
+    def rank_with_bm25(
+        self,
+        query_tokens: list[str],
+        index: InvertedIndex,
+        doc_lengths: dict[DocID, int],
+        avg_doc_len: float,
+        N: int,
+        k1: float = 1.5,
+        b: float = 0.75,
+    ) -> list[tuple[DocID, float]]:
+        scores: defaultdict[DocID, float] = defaultdict(float)
         for token in query_tokens:
             if token not in index:
                 continue
@@ -27,12 +31,15 @@ class FreeTextQueryHandler(QueryHandler):
                 scores[doc_id] += score
         return sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
-    def handle_query(self, query: str, index: InvertedIndex, documents_stat: DocumentsStat) -> list[str]:
+    def handle_query(
+        self, query: str, index: InvertedIndex, documents_stat: DocumentsStat
+    ) -> list[DocID]:
         # preprocess the query into tokens
-        query_tokens: list [str] = preprocess_line(query)
+        query_tokens: list[str] = preprocess_line(query)
         doc_lens = documents_stat.document_len_map
         avg_doc_lens = documents_stat.documents_len_avg
         N = documents_stat.documents_count
-        ranked_results = self.rank_with_bm25(query_tokens, index,
-                                             doc_lens, avg_doc_lens, N)
+        ranked_results = self.rank_with_bm25(
+            query_tokens, index, doc_lens, avg_doc_lens, N
+        )
         return [result[0] for result in ranked_results]
