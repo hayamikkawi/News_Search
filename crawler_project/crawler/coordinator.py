@@ -110,6 +110,7 @@ class CrawlerCoordinator:
                 "author": extracted.get("author"),
                 "date": extracted.get("date"),
                 "language": extracted.get("language"),
+                "description": extracted.get("description"),
                 "url": article.url,
                 "feed_url": article.feed_url,
             }

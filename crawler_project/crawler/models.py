@@ -27,6 +27,7 @@ class ExtractResult:
     author: Optional[str]
     date: Optional[str]
     language: Optional[str]
+    description: Optional[str]
     text: Optional[str]
 
 
