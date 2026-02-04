@@ -1,0 +1,110 @@
+Development Meeting Summary
+
+Date: 28 January 2026
+Location / Platform: Main Library
+
+1. Progress Update
+
+The group has now held three meetings in total.
+
+Core system architecture and responsibilities are clear and stable.
+
+Current work has moved from high-level design to concrete implementation details, especially around data collection and indexing.
+
+2. Data Collection and Storage Design
+
+The crawler will periodically fetch news data using RSS feeds (tentatively every ~10 minutes).
+
+A time-based database structure will be used to improve efficiency and freshness of search.
+
+For each news item, we will initially store only essential metadata:
+
+Headline
+
+URL
+
+Timestamp
+
+Other key features if needed
+
+Data fetched by the crawler will be:
+
+Stored in the database for persistence
+
+Exported as JSON / RSS-like objects to be passed to the indexer
+
+Update Policy
+
+If a fetched URL already exists in the database:
+
+This indicates that the news content has been updated.
+
+The old version will be ignored and replaced with the new one.
+
+The system should allow retrieval of older news items when needed (e.g. historical search).
+
+3. Optional Enhancements (Time Permitting)
+
+Generate a short abstract or summary for each news item based on collected content.
+
+This feature is optional and will only be implemented if time allows after core functionality is complete.
+
+4. Week 3 Task Breakdown
+ID	Task	Description	Depends on	Assignee
+1	Finding a dataset	Identify a dataset containing news + metadata from previous years up to present	–	Xin
+2	Crawler	Fetch news via RSS, store metadata in database, and output JSON objects for the indexer	Task 1	Leyan, Xin
+3	IR – Boolean Search	Support AND / OR / NOT, phrase search, and proximity search with unlimited combinations	–	Aidan
+4	IR – Free-text Search	Choose between TF-IDF or BM25, justify the choice, and implement it	–	Haya
+5. IR and Query Support Decisions
+
+Boolean search will support:
+
+AND, OR, NOT
+
+Phrase queries
+
+Proximity search
+
+Arbitrary combinations of operations (not limited to two tokens)
+
+Example:
+t1 AND t2 OR t3 AND NOT t4
+
+Free-text search:
+
+TF-IDF or BM25 will be selected based on effectiveness and justification.
+
+The system should support queries of any length.
+
+6. Frontend Considerations
+
+To reduce user errors and improve usability:
+
+Two UI modes will be implemented:
+
+Boolean search mode
+
+Free-text search mode
+
+In boolean mode:
+
+Users add query fields via a "+" button.
+
+Operators (AND / OR / NOT / proximity) are selected from dropdown menus.
+
+This avoids forcing users to manually learn query syntax.
+
+7. Next Steps
+
+Finalize and stabilize the crawler and database interaction.
+
+Provide a basic but functional indexer implementation.
+
+Begin integrating IR components with the frontend.
+
+Prepare for evaluation once retrieval components are in place.
+
+Next Meeting
+
+Time: Wednesday, 4:00 PM
+Location: Main Library
