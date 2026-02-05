@@ -1,11 +1,11 @@
 import json
 import mmap
 import struct
-from dataclasses import dataclass, asdict
-from typing import Final, Tuple
+from dataclasses import dataclass
+from typing import Final, Tuple, TypeAlias
+
 from config import CONFIG
 from preprocesser import preprocess_line
-from common_types import InvertedIndex, DocumentsStat, Posting
 
 # CONSTANTS
 ID_KEY: Final = "id"
@@ -24,10 +24,23 @@ class Document:
     preprocessed_description: list[str]
     preprocessed_content: list[str]
 
+
+Posting: TypeAlias = dict[int, set[int]]
+InvertedIndex: TypeAlias = dict[str, Posting]
 # catch the index gloabally to keep it in memory
 index: InvertedIndex = {}
-# catch the stats globally 
-docs_stats: DocumentsStat = DocumentsStat({})
+
+
+def write_index_to_file(index_file: str) -> None:
+    # write the data to the file
+    with open(index_file, "w", encoding="utf-8") as index_output_file:
+        for token, documents in index.items():
+            index_output_file.write(f"{token}:{len(documents)}\n")
+            for document_id, document_positions in documents.items():
+                index_output_file.write(
+                    f"\t{document_id}: {','.join(map(str, document_positions))}\n"
+                )
+
 
 def encode_vbytes(n: int) -> bytes:
     encoded_bytes = []
@@ -39,7 +52,7 @@ def encode_vbytes(n: int) -> bytes:
     encoded_bytes.append((n & 0b01111111) | 0b10000000)
     return bytes(encoded_bytes)
 
-# TODO: remove
+
 def decode_vbytes(vbytes: bytes, byte_no=0) -> Tuple[int, int]:
     byte = vbytes[byte_no]
     num = (byte & 0b1111111) << (7 * byte_no)
@@ -53,6 +66,8 @@ def decode_vbytes(vbytes: bytes, byte_no=0) -> Tuple[int, int]:
 
 
 def write_index_to_binary_file(index_file: str) -> None:
+    print(index)
+
     def compute_posting_deltas(sorted_postings: list[int]):
         posting_deltas = []
 
@@ -180,7 +195,7 @@ def read_posting(data: mmap.mmap | bytes, offset: int) -> Tuple[Posting, int]:
 
     return posting, head
 
-# TODO: remove
+
 def read_index_from_binary_file(index_path: str) -> InvertedIndex:
     index = {}
 
@@ -200,10 +215,6 @@ def read_index_from_binary_file(index_path: str) -> InvertedIndex:
 
     return index
 
-def write_documents_stats(stats_path: str) -> None: 
-    print(asdict(docs_stats))
-    with open(stats_path, "w") as f: 
-        json.dump(asdict(docs_stats), f, indent=2)
 
 def append_document_to_index(document: Document):
     doc_id = document.id
@@ -212,7 +223,6 @@ def append_document_to_index(document: Document):
         + document.preprocessed_description
         + document.preprocessed_content
     )
-    docs_stats.document_len_map[doc_id] = len(all_tokens)
     for position, token in enumerate(all_tokens):
         # if it appeared before in this doc, just add its pos
         if token in index and doc_id in index[token]:
@@ -231,7 +241,8 @@ def preprocess_document(document: dict) -> Document:
         document[ID_KEY], processed_headline, processed_desc, processed_content
     )
 
-def indexing_main(input: str, output: str, stats: str) -> None:
+
+def indexing_main(input: str, output: str) -> None:
     # TODO: parse the files into docs
     with open(input, "r", encoding="utf-8") as f:
         documents: list[dict] = json.load(f)
@@ -240,9 +251,8 @@ def indexing_main(input: str, output: str, stats: str) -> None:
     for document in documents:
         processed_document = preprocess_document(document)
         append_document_to_index(processed_document)
-    # write the stats into the stats file
-    write_documents_stats(stats)
     # write the result to output file
+    # write_index_to_file(output)
     write_index_to_binary_file(output)
     # posting = query_index_from_binary_file(output, "transform")
     # print(posting)
@@ -278,8 +288,7 @@ def add_new_document(document: dict) -> None:
 def main() -> None:
     input_file = CONFIG.input_file_path
     output_file = CONFIG.output_file_path
-    stats_file = CONFIG.stats_file_path
-    indexing_main(input_file, output_file, stats_file)
+    indexing_main(input_file, output_file)
 
 
 if __name__ == "__main__":
