@@ -5,7 +5,7 @@ from common_types import DocumentsStat
 from preprocesser import preprocess_line
 from query_handler import QueryHandler
 
-from serializer.types import DocID, InvertedIndex
+from ..types import DocID, InvertedIndex
 
 
 class FreeTextQueryHandler(QueryHandler):

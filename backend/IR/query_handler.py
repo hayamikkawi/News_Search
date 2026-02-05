@@ -2,7 +2,7 @@ from typing import Protocol
 
 from common_types import DocumentsStat
 
-from serializer.types import DocID, InvertedIndex
+from ..types import DocID, InvertedIndex
 
 
 # serves as a protocol (interface)
