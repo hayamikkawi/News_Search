@@ -2,9 +2,9 @@ import re
 from typing import Callable, Final
 
 from common_types import DocumentsStat
-from preprocesser import preprocess_line
 from query_handler import QueryHandler
 
+from ..preprocessor import preprocess_line
 from ..types import DocID, InvertedIndex
 
 BOOLEANS_RE: Final = re.compile(r"(.*?) (AND NOT|OR NOT|AND|OR|NOT) (.*)")

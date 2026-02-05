@@ -2,9 +2,9 @@ import math
 from collections import defaultdict
 
 from common_types import DocumentsStat
-from preprocesser import preprocess_line
 from query_handler import QueryHandler
 
+from ..preprocessor import preprocess_line
 from ..types import DocID, InvertedIndex
 
 

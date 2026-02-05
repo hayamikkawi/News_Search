@@ -2,6 +2,7 @@ import json
 from dataclasses import asdict, dataclass
 from typing import Final
 
+from ..preprocessor import preprocess_line
 from ..serializer import (
     query_index_from_binary_file,
     read_index_from_binary_file,
@@ -10,7 +11,6 @@ from ..serializer import (
 from ..types import InvertedIndex
 from .common_types import DocumentsStat
 from .config import CONFIG
-from .preprocesser import preprocess_line
 
 # CONSTANTS
 ID_KEY: Final = "id"
