@@ -1,7 +1,10 @@
 from .models import ExtractResult
 import trafilatura
 
-#Step C： Extract main text from HTM
+
+# Step C: Extract main text from HTML
+
+
 def _normalize_ws(text: str) -> str:
     return " ".join(text.split())
 
@@ -33,6 +36,7 @@ def extract_main_text(html: str, url: str, min_text_length: int) -> ExtractResul
     author = getattr(meta, "author", None) if meta else None
     date = getattr(meta, "date", None) if meta else None
     language = getattr(meta, "language", None) if meta else None
+    description = getattr(meta, "description", None) if meta else None
 
     norm = _normalize_ws(text) if text else None
     text_ok = bool(norm) and len(norm) >= min_text_length
@@ -43,5 +47,6 @@ def extract_main_text(html: str, url: str, min_text_length: int) -> ExtractResul
         author=author,
         date=date,
         language=language,
-        text=norm
+        description=description,
+        text=norm,
     )

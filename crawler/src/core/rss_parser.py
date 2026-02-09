@@ -3,7 +3,9 @@ import feedparser
 from dateutil import parser as dtparser
 from .models import RssEntry
 
-#Step A
+# Step A: Parse RSS feed
+
+
 def _to_iso(dt_str: Optional[str]) -> Optional[str]:
     if not dt_str:
         return None
@@ -11,6 +13,7 @@ def _to_iso(dt_str: Optional[str]) -> Optional[str]:
         return dtparser.parse(dt_str).isoformat()
     except Exception:
         return None
+
 
 def parse_feed(feed_url: str, max_items: int) -> List[RssEntry]:
     feed = feedparser.parse(feed_url)
@@ -22,12 +25,7 @@ def parse_feed(feed_url: str, max_items: int) -> List[RssEntry]:
             continue
         title = getattr(e, "title", None)
         published = getattr(e, "published", None) or getattr(e, "updated", None)
-        items.append(RssEntry(
-            url=url,
-            rss_title=title,
-            rss_published_at=_to_iso(published),
-            feed_url=feed_url
-        ))
+        items.append(RssEntry(url=url, rss_title=title, rss_published_at=_to_iso(published), feed_url=feed_url))
 
     # 去重
     seen = set()
