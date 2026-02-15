@@ -2,15 +2,14 @@ import json
 from dataclasses import asdict, dataclass
 from typing import Final
 
-from ..preprocessor import preprocess_line
-from ..serializer import (
+from common_utils.preprocessor import preprocess_line
+from common_utils.serializer import (
     query_index_from_binary_file,
     read_index_from_binary_file,
     write_index_to_binary_file,
 )
-from ..types import InvertedIndex
-from .common_types import DocumentsStat
-from .config import CONFIG
+from common_utils.types import InvertedIndex, DocumentsStat
+from config import CONFIG
 
 # CONSTANTS
 ID_KEY: Final = "id"
@@ -77,7 +76,7 @@ def indexing_main(input: str, output: str, stats: str) -> None:
         processed_document = preprocess_document(document)
         append_document_to_index(processed_document)
     # write the stats into the stats file
-    # write_documents_stats(stats)
+    write_documents_stats(stats)
     # write the result to output file
     write_index_to_binary_file(output, index)
     read_index = read_index_from_binary_file(output)

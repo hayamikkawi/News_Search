@@ -1,9 +1,6 @@
 from typing import Protocol
 
-from common_types import DocumentsStat
-
-from ..types import DocID, InvertedIndex
-
+from common_utils.types import DocumentsStat, DocID, InvertedIndex
 
 # serves as a protocol (interface)
 class QueryHandler(Protocol):
