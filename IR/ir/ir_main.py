@@ -1,10 +1,11 @@
 import json
 from enum import Enum
+from typing import Iterable, Optional
 
-from boolean_query_handler import BooleanQueryHandler
+from ir.boolean_query_handler import BooleanQueryHandler
 from common_utils.types import DocumentsStat, DocID, InvertedIndex
-from free_text_query_handler import FreeTextQueryHandler
-from query_handler import QueryHandler
+from ir.free_text_query_handler import FreeTextQueryHandler
+from ir.query_handler import QueryHandler
 from common_utils.serializer import read_index_from_binary_file
 
 
@@ -41,8 +42,7 @@ class IRMain:
                 handler = FreeTextQueryHandler()
         return handler
 
-    def handle_query(self, query: str, query_type: QueryType) -> list[DocID]:
+    def handle_query(self, query: str, query_type: QueryType, candidate_ids: Optional[Iterable[DocID]] = None) -> list[DocID]:
         handler: QueryHandler = self.__get_handler(query_type)
-        result = handler.handle_query(query, self.index, self.documents_stat)
+        result = handler.handle_query(query, self.index, self.documents_stat, candidate_ids)
         return result
-

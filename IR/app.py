@@ -4,18 +4,19 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Iterable, Optional, List, Dict, Any
 import os
 from fastapi import FastAPI, Query, HTTPException
-import mysql
-from ir_main import IRMain, QueryType
+import mysql.connector
+from ir.ir_main import IRMain, QueryType
+from common_utils.types import DocID
+from dotenv import load_dotenv
 
-app = FastAPI(lifespan=lifespan)
-
+load_dotenv()
 
 @dataclass(frozen=True)
 class SearchResult:
-    ids: List[str]
+    ids: List[DocID]
     total: int               
     index_version: str
 
@@ -30,11 +31,11 @@ class IREngine:
         self._index_version = index_version
         self.ir_main = IRMain(index_filepath, documents_stat_filepath)
 
-    # FIXME: pass candidates
-    # FIXME: str to enum
-    def search_ids(self, query: str, query_type: str) -> SearchResult:
-        result = self.ir_main.handle_query(query, query_type)
+    def search_ids(self, query: str, query_type: str, candidate_ids: Optional[Iterable[DocID]]) -> SearchResult:
+        result = self.ir_main.handle_query(query, query_type, candidate_ids)
+        print(f"result:{result}")
         return SearchResult(ids=result, total=len(result), index_version=self._index_version)
+
 
 
 # -------------------------
@@ -141,7 +142,7 @@ async def lifespan(app: FastAPI):
     yield
     print("Shutting down search service")
 
-
+app = FastAPI(lifespan=lifespan)
 # -------------------------
 # ENDPOINTS
 # -------------------------
@@ -163,7 +164,7 @@ def index_version():
 @app.get("/search")
 def search(
     query: str = Query(..., min_length=1),
-    query_type: str = "FreeText",
+    query_type: QueryType = QueryType.free_text,
     limit: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0),
     time_from: Optional[datetime] = None,
