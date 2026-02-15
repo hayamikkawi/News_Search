@@ -1,11 +1,9 @@
 import math
 from collections import defaultdict
 
-from common_types import DocumentsStat
+from common_utils.types import DocumentsStat, DocID, InvertedIndex
 from query_handler import QueryHandler
-
-from ..preprocessor import preprocess_line
-from ..types import DocID, InvertedIndex
+from common_utils.preprocessor import preprocess_line
 
 
 class FreeTextQueryHandler(QueryHandler):

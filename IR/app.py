@@ -8,7 +8,7 @@ from typing import Optional, List, Dict, Any
 import os
 from fastapi import FastAPI, Query, HTTPException
 import mysql
-from cw3.backend.IR.ir_main import IRMain, QueryType
+from ir_main import IRMain, QueryType
 
 app = FastAPI(lifespan=lifespan)
 

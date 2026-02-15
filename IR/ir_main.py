@@ -2,12 +2,10 @@ import json
 from enum import Enum
 
 from boolean_query_handler import BooleanQueryHandler
-from common_types import DocumentsStat
+from common_utils.types import DocumentsStat, DocID, InvertedIndex
 from free_text_query_handler import FreeTextQueryHandler
 from query_handler import QueryHandler
-
-from ..serializer import read_index_from_binary_file
-from ..types import DocID, InvertedIndex
+from common_utils.serializer import read_index_from_binary_file
 
 
 class QueryType(Enum):
