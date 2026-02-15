@@ -46,3 +46,18 @@ class IRMain:
         result = handler.handle_query(query, self.index, self.documents_stat)
         return result
 
+
+def main():
+    # FIXME: fix file paths
+    index_filepath: str = "../indexer/output/index.txt"
+    documents_stat_filepath: str = "../indexer/output/documents_stats.json"
+
+    ir_main = IRMain(index_filepath, documents_stat_filepath)
+    res = ir_main.handle_query(
+        "tell me about natural language processing", QueryType.free_text
+    )
+    print(res)
+
+
+if __name__ == "__main__":
+    main()
