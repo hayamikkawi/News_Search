@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -9,7 +10,7 @@ from fastapi import FastAPI, Query, HTTPException
 import mysql
 from cw3.backend.IR.ir_main import IRMain, QueryType
 
-app = FastAPI(title="News Search API")
+app = FastAPI(lifespan=lifespan)
 
 
 @dataclass(frozen=True)
@@ -56,8 +57,12 @@ class DocStore:
             return []
         placeholders = ",".join(["%s"] * len(ids))
         sql = f"""
-            SELECT id, headline, description, time
-            FROM documents
+            SELECT
+              id,
+              COALESCE(title, rss_title) AS headline,
+              COALESCE(rss_published_at, fetched_at) AS time,
+              COALESCE(final_url, url) AS url
+            FROM articles
             WHERE id IN ({placeholders})
         """
         cur = self._conn.cursor(dictionary=True)
@@ -68,9 +73,13 @@ class DocStore:
 
     def fetch_latest(self, limit: int) -> List[Dict[str, Any]]:
         sql = """
-            SELECT id, headline, description, time
-            FROM documents
-            ORDER BY time DESC
+            SELECT
+              id,
+              COALESCE(title, rss_title) AS headline,
+              COALESCE(rss_published_at, fetched_at) AS time,
+              COALESCE(final_url, url) AS url
+            FROM articles
+            ORDER BY COALESCE(rss_published_at, fetched_at) DESC
             LIMIT %s
         """
         cur = self._conn.cursor(dictionary=True)
@@ -82,31 +91,36 @@ class DocStore:
     def fetch_candidate_ids_by_time(
         self, time_from: Optional[datetime], time_to: Optional[datetime]
     ) -> Optional[set[str]]:
-       if not time_from and not time_to:
+        if not time_from and not time_to: 
             return None
-       if time_from and time_to:
-            sql = "SELECT id FROM documents WHERE time BETWEEN %s AND %s"
+        if time_from and time_to: 
+            sql = """
+                SELECT id FROM articles
+                WHERE COALESCE(rss_published_at, fetched_at) BETWEEN %s AND %s
+            """
             params = (time_from, time_to)
-       elif time_from:
-            sql = "SELECT id FROM documents WHERE time >= %s"
+        elif time_from:
+            sql = """
+                SELECT id FROM articles
+                WHERE COALESCE(rss_published_at, fetched_at) >= %s
+            """
             params = (time_from,)
-       else:
-            sql = "SELECT id FROM documents WHERE time <= %s"
+        else: 
+            sql = """
+                SELECT id FROM articles
+                WHERE COALESCE(rss_published_at, fetched_at) <= %s
+            """
             params = (time_to,)
-
-       cur = self._conn.cursor()
-       cur.execute(sql, params)
-       ids = {row[0] for row in cur.fetchall()}
-       cur.close()
-       return ids
+        cur = self._conn.cursor()
+        cur.execute(sql, params)
+        ids = {row[0] for row in cur.fetchall()}
+        cur.close()
+        return ids
 
 
 # -------------------------
 # GLOBALS (engine + store)
 # -------------------------
-
-engine: Optional[IREngine] = None
-store: Optional[DocStore] = None
 
 INDEX_VERSION = os.environ.get("INDEX_VERSION", "dev")
 INDEX_PATH = os.environ.get("INDEX_PATH", "/data/index.bin")
@@ -116,14 +130,16 @@ DOCS_STAT_PATH = os.environ.get("DOCS_STAT_PATH", "/data/docs_stat.json")
 # STARTUP
 # -------------------------
 
-#FIXME: depricated
-@app.on_event("startup")
-def startup() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     global engine, store
-    store = DocStore()  
-    engine = IREngine(index_filepath=INDEX_PATH,
-                      documents_stat_filepath= DOCS_STAT_PATH,
-                      index_version=INDEX_VERSION)
+    print("Starting search service...")
+    app.state.store = DocStore()  
+    app.state.engine = IREngine(index_filepath=INDEX_PATH,
+                                documents_stat_filepath= DOCS_STAT_PATH,
+                                index_version=INDEX_VERSION)
+    yield
+    print("Shutting down search service")
 
 
 # -------------------------
@@ -132,11 +148,13 @@ def startup() -> None:
 
 @app.get("/health")
 def health():
+    engine = app.state.engine
     return {"ok": True, "index_version": engine._index_version if engine else None}
 
 
 @app.get("/index_version")
 def index_version():
+    engine = app.state.engine
     if not engine:
         raise HTTPException(status_code=503, detail="Engine not loaded")
     return {"version": engine._index_version}
@@ -154,6 +172,8 @@ def search(
     """
     Returns ranked results. IR gives ids; then fetch metadata from DB.
     """
+    engine = app.state.engine
+    store = app.state.store
     if not engine or not store:
         raise HTTPException(status_code=503, detail="Service not ready")
 
@@ -192,6 +212,7 @@ def search(
 def latest(
     limit: int = Query(10, ge=1, le=50),
 ):
+    store = app.state.store
     if not store:
         raise HTTPException(status_code=503, detail="Service not ready")
     docs = store.fetch_latest(limit)
