@@ -11,7 +11,11 @@ import mysql.connector
 from ir.ir_main import IRMain, QueryType
 from common_utils.types import DocID
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
+import logging
 
+logger = logging.getLogger("search")
+logging.basicConfig(level=logging.INFO)
 load_dotenv()
 
 @dataclass(frozen=True)
@@ -126,6 +130,8 @@ class DocStore:
 INDEX_VERSION = os.environ.get("INDEX_VERSION", "dev")
 INDEX_PATH = os.environ.get("INDEX_PATH", "/data/index.bin")
 DOCS_STAT_PATH = os.environ.get("DOCS_STAT_PATH", "/data/docs_stat.json")
+ORIGINS = [os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")]
+
 
 # -------------------------
 # STARTUP
@@ -143,6 +149,13 @@ async def lifespan(app: FastAPI):
     print("Shutting down search service")
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # -------------------------
 # ENDPOINTS
 # -------------------------
@@ -150,7 +163,9 @@ app = FastAPI(lifespan=lifespan)
 @app.get("/health")
 def health():
     engine = app.state.engine
-    return {"ok": True, "index_version": engine._index_version if engine else None}
+    if not engine:
+        raise HTTPException(status_code=503, detail="Engine not loaded")
+    return {"ok": True, "index_version": engine._index_version}
 
 
 @app.get("/index_version")
@@ -176,23 +191,29 @@ def search(
     engine = app.state.engine
     store = app.state.store
     if not engine or not store:
+        logger.exception("Service not ready")
         raise HTTPException(status_code=503, detail="Service not ready")
-
+    if len(query) <= 0 or offset < 0: 
+        raise HTTPException(status_code=503, detail="Bad request")
+    logger.info(f"""query: {query}\n query type: {query_type}\n limit: {limit}, offset:{offset}, time from: {time_from}, time to: {time_to}""")
     # Snapshot the engine for consistency during reloads
     engine_snapshot = engine
     store_snapshot = store
+    try: 
+        # pre-filter candidates by time
+        candidate_ids = store_snapshot.fetch_candidate_ids_by_time(time_from, time_to)
 
-    # Optional: pre-filter candidates by time
-    candidate_ids = store_snapshot.fetch_candidate_ids_by_time(time_from, time_to)
+        # Search (returns ids only)
+        sr = engine_snapshot.search_ids(query, query_type, candidate_ids=candidate_ids)
 
-    # Search (returns ids only)
-    sr = engine_snapshot.search_ids(query, query_type, candidate_ids=candidate_ids)
+        # Pagination slice
+        page_ids = sr.ids[offset : offset + limit]
 
-    # Pagination slice
-    page_ids = sr.ids[offset : offset + limit]
-
-    # Fetch metadata for these ids
-    docs = store_snapshot.fetch_docs_by_ids(page_ids)
+        # Fetch metadata for these ids
+        docs = store_snapshot.fetch_docs_by_ids(page_ids)
+    except Exception as e:
+        logger.exception(f"Search pipeline failed, {e}")
+        raise HTTPException(status_code=500, detail="Internal search error")
 
     # Preserve ranking order
     by_id = {d["id"]: d for d in docs}
@@ -210,11 +231,15 @@ def search(
 
 
 @app.get("/news/latest")
-def latest(
-    limit: int = Query(10, ge=1, le=50),
-):
+def latest(limit: int = Query(10, ge=1, le=50),):
     store = app.state.store
     if not store:
+        logger.exception("Service not ready")
         raise HTTPException(status_code=503, detail="Service not ready")
-    docs = store.fetch_latest(limit)
-    return {"results": docs}
+    
+    try:
+        docs = store.fetch_latest(limit)
+        return {"results": docs}
+    except Exception as e: 
+        logger.exception(f"Fetching latest news failed, {e}")
+        raise HTTPException(status_code=500, detail="Internal search error")
