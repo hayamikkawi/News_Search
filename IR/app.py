@@ -1,17 +1,21 @@
 from __future__ import annotations
-
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Optional, List, Dict, Any
+from typing import List, Optional
 import os
+import asyncio
 from fastapi import FastAPI, Query, HTTPException
-import mysql.connector
-from ir.ir_main import IRMain, QueryType
+from IR.helpers.doc_store import DocStore
+from IR.ir.ir_main import IRMain, QueryType
 from common_utils.types import DocID
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
+import logging
 
+logger = logging.getLogger("search")
+logging.basicConfig(level=logging.INFO)
 load_dotenv()
 
 @dataclass(frozen=True)
@@ -20,129 +24,79 @@ class SearchResult:
     total: int               
     index_version: str
 
-class IREngine:
-    _index_version: str
-    _ir_main: IRMain
-    def __init__(self,
-                  index_filepath: str,
-                  documents_stat_filepath: str,
-                  index_version: str = "unknown"):
-        self._index_filepath = index_filepath
-        self._index_version = index_version
-        self.ir_main = IRMain(index_filepath, documents_stat_filepath)
-
-    def search_ids(self, query: str, query_type: str, candidate_ids: Optional[Iterable[DocID]]) -> SearchResult:
-        result = self.ir_main.handle_query(query, query_type, candidate_ids)
-        print(f"result:{result}")
-        return SearchResult(ids=result, total=len(result), index_version=self._index_version)
-
-
-
 # -------------------------
-# DB LAYER (interface)
+# GLOBALS
 # -------------------------
-
-class DocStore:
-
-    def __init__(self):
-        self._conn = mysql.connector.connect(
-            host=os.environ.get("DB_HOST", "127.0.0.1"),
-            port=int(os.environ.get("DB_PORT", "3306")),
-            user=os.environ["DB_USER"],
-            password=os.environ["DB_PASSWORD"],
-            database=os.environ["DB_NAME"],
-        )
-    
-    def fetch_docs_by_ids(self, ids: List[str]) -> List[Dict[str, Any]]:
-        if not ids:
-            return []
-        placeholders = ",".join(["%s"] * len(ids))
-        sql = f"""
-            SELECT
-              id,
-              COALESCE(title, rss_title) AS headline,
-              COALESCE(rss_published_at, fetched_at) AS time,
-              COALESCE(final_url, url) AS url
-            FROM articles
-            WHERE id IN ({placeholders})
-        """
-        cur = self._conn.cursor(dictionary=True)
-        cur.execute(sql, ids)
-        rows = cur.fetchall()
-        cur.close()
-        return rows
-
-    def fetch_latest(self, limit: int) -> List[Dict[str, Any]]:
-        sql = """
-            SELECT
-              id,
-              COALESCE(title, rss_title) AS headline,
-              COALESCE(rss_published_at, fetched_at) AS time,
-              COALESCE(final_url, url) AS url
-            FROM articles
-            ORDER BY COALESCE(rss_published_at, fetched_at) DESC
-            LIMIT %s
-        """
-        cur = self._conn.cursor(dictionary=True)
-        cur.execute(sql, (limit,))
-        rows = cur.fetchall()
-        cur.close()
-        return rows
-
-    def fetch_candidate_ids_by_time(
-        self, time_from: Optional[datetime], time_to: Optional[datetime]
-    ) -> Optional[set[str]]:
-        if not time_from and not time_to: 
-            return None
-        if time_from and time_to: 
-            sql = """
-                SELECT id FROM articles
-                WHERE COALESCE(rss_published_at, fetched_at) BETWEEN %s AND %s
-            """
-            params = (time_from, time_to)
-        elif time_from:
-            sql = """
-                SELECT id FROM articles
-                WHERE COALESCE(rss_published_at, fetched_at) >= %s
-            """
-            params = (time_from,)
-        else: 
-            sql = """
-                SELECT id FROM articles
-                WHERE COALESCE(rss_published_at, fetched_at) <= %s
-            """
-            params = (time_to,)
-        cur = self._conn.cursor()
-        cur.execute(sql, params)
-        ids = {row[0] for row in cur.fetchall()}
-        cur.close()
-        return ids
-
-
-# -------------------------
-# GLOBALS (engine + store)
-# -------------------------
-
-INDEX_VERSION = os.environ.get("INDEX_VERSION", "dev")
-INDEX_PATH = os.environ.get("INDEX_PATH", "/data/index.bin")
-DOCS_STAT_PATH = os.environ.get("DOCS_STAT_PATH", "/data/docs_stat.json")
+ORIGINS = [os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")]
 
 # -------------------------
 # STARTUP
 # -------------------------
 
+def load_engine_from_version(base_dir: str, version: str) -> IRMain:
+    vdir = Path(base_dir) / version
+    print(f"vdir: {vdir}")
+    index_path = str(vdir / app.state.index_filename)
+    print(f"index_path: {index_path}")
+    stats_path = str(vdir / app.state.docs_stat_filename)
+    print(f"stats_path: {stats_path}")
+    return IRMain(index_path, stats_path)
+
+async def relaod_loop(app, every_seconds: int = 600): 
+    logging.info("relaod_loop called")
+    base_dir = app.state.index_base_dir
+    latest_file = Path(base_dir) / "LATEST.txt"
+    while not app.state.stop_event.is_set(): 
+        logging.info("relaod_loop inside while loop")
+        try:
+            if latest_file.exists(): 
+                latest_version = latest_file.read_text(encoding="utf-8").strip()
+            if latest_version and latest_version != app.state.index_version: 
+                logger.info("Reloading index to %s", latest_version)
+                new_engine = load_engine_from_version(base_dir, latest_version)
+                app.state.engine = new_engine
+                app.state.index_version = latest_version
+                logger.info("Index switched to %s", latest_version)
+        except Exception as e: 
+            logger.exception("Index reload failed (keeping current index)")
+        await asyncio.sleep(every_seconds)
+
+    
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global engine, store
     print("Starting search service...")
-    app.state.store = DocStore()  
-    app.state.engine = IREngine(index_filepath=INDEX_PATH,
-                                documents_stat_filepath= DOCS_STAT_PATH,
-                                index_version=INDEX_VERSION)
+    # config
+    app.state.index_base_dir = os.environ.get("INDEX_BASE_DIR", "/opt/ttds-project/shared/indexer/output")
+    app.state.index_filename = os.environ.get("INDEX_FILENAME", "index.txt")
+    app.state.docs_stat_filename = os.environ.get("DOCS_STAT_FILENAME", "documents_stats.json")
+    app.state.index_version = "boot"
+    # datastore
+    app.state.store = DocStore() 
+    # Load the index from latest version
+    latest = (Path(app.state.index_base_dir) / "LATEST.txt").read_text().strip()
+    print(f"latest: {latest}")
+    app.state.engine = load_engine_from_version(app.state.index_base_dir, latest)
+    app.state.index_version = latest
+    # reload loop
+    app.state.stop_event = asyncio.Event()
+    app.state.reload_task = asyncio.create_task(relaod_loop(app, every_seconds=600))
     yield
+    # shutdown
+    app.state.stop_event.set()
+    app.state.reload_task.cancel()
     print("Shutting down search service")
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # -------------------------
 # ENDPOINTS
 # -------------------------
@@ -150,7 +104,9 @@ app = FastAPI(lifespan=lifespan)
 @app.get("/health")
 def health():
     engine = app.state.engine
-    return {"ok": True, "index_version": engine._index_version if engine else None}
+    if not engine:
+        raise HTTPException(status_code=503, detail="Engine not loaded")
+    return {"ok": True, "index_version": app.state.index_version}
 
 
 @app.get("/index_version")
@@ -158,7 +114,7 @@ def index_version():
     engine = app.state.engine
     if not engine:
         raise HTTPException(status_code=503, detail="Engine not loaded")
-    return {"version": engine._index_version}
+    return {"version": app.state.index_version}
 
 
 @app.get("/search")
@@ -176,23 +132,29 @@ def search(
     engine = app.state.engine
     store = app.state.store
     if not engine or not store:
+        logger.exception("Service not ready")
         raise HTTPException(status_code=503, detail="Service not ready")
-
+    if len(query) <= 0 or offset < 0: 
+        raise HTTPException(status_code=503, detail="Bad request")
+    logger.info(f"""query: {query}\n query type: {query_type}\n limit: {limit}, offset:{offset}, time from: {time_from}, time to: {time_to}""")
     # Snapshot the engine for consistency during reloads
     engine_snapshot = engine
     store_snapshot = store
+    try: 
+        # pre-filter candidates by time
+        candidate_ids = store_snapshot.fetch_candidate_ids_by_time(time_from, time_to)
 
-    # Optional: pre-filter candidates by time
-    candidate_ids = store_snapshot.fetch_candidate_ids_by_time(time_from, time_to)
+        # Search (returns ids only)
+        ids = engine_snapshot.handle_query(query, query_type, candidate_ids=candidate_ids)
+        sr = SearchResult(ids=ids, total=len(ids), index_version=app.state.index_version)
+        # Pagination slice
+        page_ids = sr.ids[offset : offset + limit]
 
-    # Search (returns ids only)
-    sr = engine_snapshot.search_ids(query, query_type, candidate_ids=candidate_ids)
-
-    # Pagination slice
-    page_ids = sr.ids[offset : offset + limit]
-
-    # Fetch metadata for these ids
-    docs = store_snapshot.fetch_docs_by_ids(page_ids)
+        # Fetch metadata for these ids
+        docs = store_snapshot.fetch_docs_by_ids(page_ids)
+    except Exception as e:
+        logger.exception(f"Search pipeline failed, {e}")
+        raise HTTPException(status_code=500, detail="Internal search error")
 
     # Preserve ranking order
     by_id = {d["id"]: d for d in docs}
@@ -203,18 +165,22 @@ def search(
         "offset": offset,
         "limit": limit,
         "total": sr.total,
-        "index_version": sr.index_version,
+        "index_version": app.state.index_version,
         "results": ordered,
         "has_more": offset + limit < sr.total,
     }
 
 
 @app.get("/news/latest")
-def latest(
-    limit: int = Query(10, ge=1, le=50),
-):
+def latest(limit: int = Query(10, ge=1, le=50),):
     store = app.state.store
     if not store:
+        logger.exception("Service not ready")
         raise HTTPException(status_code=503, detail="Service not ready")
-    docs = store.fetch_latest(limit)
-    return {"results": docs}
+    
+    try:
+        docs = store.fetch_latest(limit)
+        return {"results": docs}
+    except Exception as e: 
+        logger.exception(f"Fetching latest news failed, {e}")
+        raise HTTPException(status_code=500, detail="Internal search error")

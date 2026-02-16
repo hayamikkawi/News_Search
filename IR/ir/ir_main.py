@@ -1,18 +1,16 @@
 import json
 from enum import Enum
 from typing import Iterable, Optional
-
-from ir.boolean_query_handler import BooleanQueryHandler
+from IR.ir.boolean_query_handler import BooleanQueryHandler
 from common_utils.types import DocumentsStat, DocID, InvertedIndex
-from ir.free_text_query_handler import FreeTextQueryHandler
-from ir.query_handler import QueryHandler
+from IR.ir.free_text_query_handler import FreeTextQueryHandler
+from IR.ir.query_handler import QueryHandler
 from common_utils.serializer import read_index_from_binary_file
 
 
 class QueryType(Enum):
     boolean = "Bool"
     free_text = "FreeText"
-
 
 class IRMain:
     index: InvertedIndex

@@ -2,7 +2,7 @@ import re
 from typing import Callable, Final, Iterable, Optional
 
 from common_utils.types import DocumentsStat, DocID, InvertedIndex
-from ir.query_handler import QueryHandler
+from IR.ir.query_handler import QueryHandler
 from common_utils.preprocessor import preprocess_line
 
 BOOLEANS_RE: Final = re.compile(r"(.*?) (AND NOT|OR NOT|AND|OR|NOT) (.*)")
