@@ -3,7 +3,7 @@ from collections import defaultdict
 from typing import Iterable, Optional
 
 from common_utils.types import DocumentsStat, DocID, InvertedIndex
-from ir.query_handler import QueryHandler
+from IR.ir.query_handler import QueryHandler
 from common_utils.preprocessor import preprocess_line
 
 
