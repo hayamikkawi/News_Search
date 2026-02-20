@@ -39,7 +39,7 @@ class IndexerConfig:
     # Whether to save content to the database (False saves only metadata to save space)
     save_content_to_db: bool = os.getenv("SAVE_CONTENT_TO_DB", "false").lower() == "true"
     # JSON flush mode: "append" (merge with dedup), "overwrite" (replace), "append_only" (fast, no dedup)
-    flush_mode: str = os.getenv("INDEXER_FLUSH_MODE", "append")
+    flush_mode: str = os.getenv("INDEXER_FLUSH_MODE", "new_file")
     # File size threshold (MB) for choosing dedup strategy
     dedup_threshold_mb: int = int(os.getenv("INDEXER_DEDUP_THRESHOLD_MB", "100"))
 

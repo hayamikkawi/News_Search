@@ -77,6 +77,8 @@ MYSQL_POOL_SIZE=5
 
 # Indexer Configuration
 INDEXER_OUTPUT_DIR=../indexer/input
+INDEXER_FLUSH_MODE=new_file
+# (optional, used only for legacy single-file modes)
 INDEXER_OUTPUT_FILENAME=docs.json
 SAVE_CONTENT_TO_DB=false
 ```
@@ -116,7 +118,7 @@ SAVE_CONTENT_TO_DB=false
                                 ▼
                      ┌─────────────────────┐
                      │ ../indexer/input/   │
-                     │    docs.json        │
+                     │docs_YYYYMMDD_HHMMSS.json│
                      │ [                   │
                      │   {id:1, ...},      │
                      │   {id:2, ...},      │
@@ -251,7 +253,7 @@ Coordinator.process_article():
     │           Results: Document added to batch
     │
     ├─► Step 2.5: indexer.flush() (after batch processing)
-    │           Write all documents to ../indexer/input/docs.json:
+    │           Write the batch to a new file under ../indexer/input/, e.g. docs_YYYYMMDD_HHMMSS.json (atomic write via .tmp then rename):
     │           [
     │               {"id": 12345, "title": "...", "description": "...", "content": "..."},
     │               {"id": 12346, "title": "...", "description": "...", "content": "..."}
@@ -290,7 +292,8 @@ class FileBasedIndexer:
         """Accumulate documents in memory, convert to Indexer format"""
 
     def flush() -> bool
-        """Write all documents to JSON file"""
+        """flush(mode="new_file"): write this batch to a new timestamped file for incremental indexing
+            flush(mode="append"/"overwrite"): legacy single-file modes"""
 
     def clear() -> None
         """Clear document cache"""

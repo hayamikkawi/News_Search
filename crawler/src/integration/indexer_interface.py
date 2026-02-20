@@ -14,6 +14,8 @@ import json
 import os
 import tempfile
 from typing import List, Dict, Set
+from datetime import datetime
+
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +109,9 @@ class FileBasedIndexer:
 
             file_path = os.path.join(self.output_dir, self.output_filename)
 
-            if mode == "overwrite":
+            if mode == "new_file":
+                return self._flush_new_file()
+            elif mode == "overwrite":
                 return self._flush_overwrite(file_path)
             elif mode == "append":
                 return self._flush_append_with_dedup(file_path)
@@ -118,6 +122,20 @@ class FileBasedIndexer:
 
         except Exception as e:
             logger.error(f"Error flushing documents to file: {e}")
+            return False
+
+    def _flush_new_file(self) -> bool:
+        try:
+            filename = self._make_timestamp_name(prefix="docs")
+            final_path = os.path.join(self.output_dir, filename)
+
+            self._atomic_write_json(final_path, self.documents)
+
+            logger.info(f"New-file flush: Flushed {len(self.documents)} documents to {final_path}")
+            self.clear()
+            return True
+        except Exception as e:
+            logger.error(f"New-file flush failed: {e}")
             return False
 
     def _flush_overwrite(self, file_path: str) -> bool:
@@ -296,6 +314,20 @@ class FileBasedIndexer:
         except Exception as e:
             logger.error(f"Append-only flush failed: {e}")
             return False
+
+    def _make_timestamp_name(self, prefix: str = "docs") -> str:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        return f"{prefix}_{ts}.json"
+
+    def _atomic_write_json(self, final_path: str, data) -> None:
+        tmp_path = final_path + ".tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, final_path)
+
+
 
     def clear(self) -> None:
         """Clear the accumulated document list"""
