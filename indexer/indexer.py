@@ -12,7 +12,6 @@ from common_utils.serializer import (
     write_index_to_binary_file,
 )
 from common_utils.types import InvertedIndex, DocumentsStat
-from config import CONFIG
 
 # CONSTANTS
 ID_KEY: Final = "id"
@@ -73,8 +72,7 @@ def preprocess_document(document: dict) -> Document:
 
 
 def indexing_main(input: str, output: str, stats: str) -> None:
-    with open(input, "r", encoding="utf-8") as f:
-        documents: list[dict] = json.load(f)
+    documents = get_latest_documents(input)
     # preprocess each document and save the result in Document object,
     # then add the document to the index
     add_new_documents(documents)
@@ -112,7 +110,10 @@ def read_stats_file(path: str):
     with open(path, mode="r") as f: 
         global docs_stats
         data = json.load(f)
-        docs_stats = DocumentsStat(**data)            
+        docs_stats = DocumentsStat(**data)
+        docs_stats.document_len_map = {
+            int(k): v for k, v in docs_stats.document_len_map.items()
+        }          
 
 def load_latest_index_file(output_base_dir: str, index_filename: str, stats_filename: str):
     with open(f"{output_base_dir}/LATEST.txt", mode="r") as f:
@@ -123,19 +124,28 @@ def load_latest_index_file(output_base_dir: str, index_filename: str, stats_file
     index = read_index_from_binary_file(latest_index_filepath)
     read_stats_file(latest_stats_filepath)
 
+def get_latest_documents(input_file_directory:str) -> list[dict]: 
+    documents: list[dict] = []
+    directory = Path(input_file_directory)
+    for file_path in directory.glob("*.json"):
+        print(file_path)
+        with open(file_path, "r", encoding="utf-8") as f:
+            documents.extend(json.load(f))
+    return documents
 
 
 def main() -> None:
-    input_file, output_file_base_dir, output_filename, stats_filename = read_env_vars()
+    input_directory, output_file_base_dir,output_filename, stats_filename = read_env_vars()
+    # load latest index 
+    load_latest_index_file(output_base_dir=output_file_base_dir,
+                           index_filename=output_filename,
+                           stats_filename=stats_filename)    
     version = get_version()
     # construct the paths
     (Path(output_file_base_dir)/ version).mkdir(parents=True, exist_ok=True)
     output_filepath = Path(output_file_base_dir)/ version / output_filename
     stats_filepath = Path(output_file_base_dir)/ version / stats_filename
-    load_latest_index_file(output_base_dir=output_file_base_dir,
-                           index_filename=output_filename,
-                           stats_filename=stats_filename)
-    indexing_main(input_file, str(output_filepath), str(stats_filepath))
+    indexing_main(input_directory, str(output_filepath), str(stats_filepath))
     # update LATEST file 
     write_version_to_latest(output_file_base_dir, version)
 
