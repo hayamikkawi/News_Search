@@ -116,7 +116,8 @@ def read_stats_file(path: str):
         }          
 
 def load_latest_index_file(output_base_dir: str, index_filename: str, stats_filename: str):
-    with open(f"{output_base_dir}/LATEST.txt", mode="r") as f:
+    path = Path(output_base_dir) / "LATEST.txt"
+    with open(str(path), mode="r") as f:
         version = f.read()
     latest_index_filepath = Path(output_base_dir) / version / index_filename
     latest_stats_filepath = Path(output_base_dir) / version / stats_filename
