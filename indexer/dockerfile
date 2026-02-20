@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir -e /app/common_utils
 COPY indexer /app/indexer
 RUN pip install --no-cache-dir -r  /app/indexer/requirements.txt
 
-CMD ["python", "-m", "indexer/indexer"]
+CMD ["python", "indexer/indexer.py"]
