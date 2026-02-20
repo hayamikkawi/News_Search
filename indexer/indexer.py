@@ -79,21 +79,6 @@ def indexing_main(input: str, output: str, stats: str) -> None:
     write_documents_stats(stats)
     # write the result to output file
     write_index_to_binary_file(output, index)
-    read_index = read_index_from_binary_file(output)
-
-    equals = []
-    for key in index.keys():
-        a = index[key]
-        b = read_index[key]
-        equals.append(a == b)
-    print(all(equals))
-
-    equals = []
-    for key in index.keys():
-        a = index[key]
-        b = query_index_from_binary_file(output, key)
-        equals.append(a == b)
-    print(all(equals))
 
 
 # This will be called from outside to add more documents
