@@ -1,6 +1,9 @@
 import json
 from dataclasses import asdict, dataclass
+import os
+from pathlib import Path
 from typing import Final
+from datetime import datetime
 
 from common_utils.preprocessor import preprocess_line
 from common_utils.serializer import (
@@ -34,10 +37,14 @@ docs_stats: DocumentsStat = DocumentsStat({})
 
 
 def write_documents_stats(stats_path: str) -> None:
-    print(asdict(docs_stats))
+    # print(asdict(docs_stats))
     with open(stats_path, "w") as f:
         json.dump(asdict(docs_stats), f, indent=2)
 
+def write_version_to_latest(output_base_dir: str, version: str):
+    latest_filepath = Path(output_base_dir)/"LATEST.txt"
+    with open(latest_filepath, "w", encoding="utf-8") as f:
+        f.write(version)
 
 def append_document_to_index(document: Document):
     doc_id = document.id
@@ -56,7 +63,6 @@ def append_document_to_index(document: Document):
                 index[token] = {}
             index[token][doc_id] = set([position])
 
-
 def preprocess_document(document: dict) -> Document:
     processed_headline = preprocess_line(document[HEADLINE_KEY])
     processed_desc = preprocess_line(document[DESC_KEY])
@@ -67,14 +73,11 @@ def preprocess_document(document: dict) -> Document:
 
 
 def indexing_main(input: str, output: str, stats: str) -> None:
-    # TODO: parse the files into docs
     with open(input, "r", encoding="utf-8") as f:
         documents: list[dict] = json.load(f)
     # preprocess each document and save the result in Document object,
     # then add the document to the index
-    for document in documents:
-        processed_document = preprocess_document(document)
-        append_document_to_index(processed_document)
+    add_new_documents(documents)
     # write the stats into the stats file
     write_documents_stats(stats)
     # write the result to output file
@@ -91,13 +94,50 @@ def add_new_document(document: dict) -> None:
     preprocessed_document = preprocess_document(document)
     append_document_to_index(preprocessed_document)
 
+def read_env_vars() -> (tuple[str, str, str, str]):
+    # where to read data from 
+    input_file = os.environ.get("INDEX_INPUT_FILEPATH", "/opt/ttds-project/shared/indexer/input/docs.json")
+    # full output path = base_dir + version + file
+    output_file_base_dir = os.environ.get("INDEX_BASE_DIR", "/opt/ttds-project/shared/indexer/output")
+    output_filename = os.environ.get("INDEX_FILENAME", "index.txt")
+    stats_filename = os.environ.get("DOCS_STAT_FILENAME", "documents_stats.json")
+    return (input_file, output_file_base_dir, output_filename, stats_filename)
+
+def get_version() -> str: 
+    now = datetime.now()
+    version = f"indexer_{now.strftime('v_%m,%d,%Y,%H:%M:%S')}"
+    return version
+
+def read_stats_file(path: str): 
+    with open(path, mode="r") as f: 
+        global docs_stats
+        data = json.load(f)
+        docs_stats = DocumentsStat(**data)            
+
+def load_latest_index_file(output_base_dir: str, index_filename: str, stats_filename: str):
+    with open(f"{output_base_dir}/LATEST.txt", mode="r") as f:
+        version = f.read()
+    latest_index_filepath = Path(output_base_dir) / version / index_filename
+    latest_stats_filepath = Path(output_base_dir) / version / stats_filename
+    global index
+    index = read_index_from_binary_file(latest_index_filepath)
+    read_stats_file(latest_stats_filepath)
+
+
 
 def main() -> None:
-    input_file = CONFIG.input_file_path
-    output_file = CONFIG.output_file_path
-    stats_file = CONFIG.stats_file_path
-    indexing_main(input_file, output_file, stats_file)
-
+    input_file, output_file_base_dir, output_filename, stats_filename = read_env_vars()
+    version = get_version()
+    # construct the paths
+    (Path(output_file_base_dir)/ version).mkdir(parents=True, exist_ok=True)
+    output_filepath = Path(output_file_base_dir)/ version / output_filename
+    stats_filepath = Path(output_file_base_dir)/ version / stats_filename
+    load_latest_index_file(output_base_dir=output_file_base_dir,
+                           index_filename=output_filename,
+                           stats_filename=stats_filename)
+    indexing_main(input_file, str(output_filepath), str(stats_filepath))
+    # update LATEST file 
+    write_version_to_latest(output_file_base_dir, version)
 
 if __name__ == "__main__":
     main()
