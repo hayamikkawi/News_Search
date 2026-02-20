@@ -115,9 +115,11 @@ def read_stats_file(path: str):
             int(k): v for k, v in docs_stats.document_len_map.items()
         }          
 
-def load_latest_index_file(output_base_dir: str, index_filename: str, stats_filename: str):
-    path = Path(output_base_dir) / "LATEST.txt"
-    with open(str(path), mode="r") as f:
+def load_latest_index_file_if_exists(output_base_dir: str, index_filename: str, stats_filename: str):
+    path = str(Path(output_base_dir) / "LATEST.txt")
+    if not os.path.exists(path): 
+        return
+    with open(path, mode="r") as f:
         version = f.read()
     latest_index_filepath = Path(output_base_dir) / version / index_filename
     latest_stats_filepath = Path(output_base_dir) / version / stats_filename
