@@ -96,9 +96,9 @@ def add_new_document(document: dict) -> None:
 
 def read_env_vars() -> (tuple[str, str, str, str]):
     # where to read data from 
-    input_file = os.environ.get("INDEX_INPUT_FILEPATH", "/opt/ttds-project/shared/indexer/input/docs.json")
+    input_file = os.environ.get("INDEX_INPUT_DIR", "/opt/ttds-project/shared/indexer/input/docs.json")
     # full output path = base_dir + version + file
-    output_file_base_dir = os.environ.get("INDEX_BASE_DIR", "/opt/ttds-project/shared/indexer/output")
+    output_file_base_dir = os.environ.get("INDEX_OUTPUT_DIR", "/opt/ttds-project/shared/indexer/output")
     output_filename = os.environ.get("INDEX_FILENAME", "index.txt")
     stats_filename = os.environ.get("DOCS_STAT_FILENAME", "documents_stats.json")
     return (input_file, output_file_base_dir, output_filename, stats_filename)
