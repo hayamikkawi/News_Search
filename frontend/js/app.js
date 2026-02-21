@@ -607,6 +607,18 @@ function initApp() {
   initSearchModeToggle();
   initBooleanSearch();
 
+  // Initialize API integration (if available)
+  if (typeof initSearchWithAPI !== 'undefined') {
+    initSearchWithAPI();
+    console.log('API integration initialized');
+  }
+
+  // Load latest news (if API is available)
+  if (typeof loadLatestNews !== 'undefined') {
+    loadLatestNews(10);
+    console.log('Loading latest news...');
+  }
+
   console.log('GlobalSearch app initialized successfully');
 }
 
