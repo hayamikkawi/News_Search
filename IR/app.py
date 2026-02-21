@@ -35,11 +35,11 @@ ORIGINS = [os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")]
 
 def load_engine_from_version(base_dir: str, version: str) -> IRMain:
     vdir = Path(base_dir) / version
-    print(f"vdir: {vdir}")
+    logging.info(f"vdir: {vdir}")
     index_path = str(vdir / app.state.index_filename)
-    print(f"index_path: {index_path}")
+    logging.info(f"index_path: {index_path}")
     stats_path = str(vdir / app.state.docs_stat_filename)
-    print(f"stats_path: {stats_path}")
+    logging.info(f"stats_path: {stats_path}")
     return IRMain(index_path, stats_path)
 
 async def relaod_loop(app, every_seconds: int = 600): 
@@ -51,6 +51,7 @@ async def relaod_loop(app, every_seconds: int = 600):
         try:
             if latest_file.exists(): 
                 latest_version = latest_file.read_text(encoding="utf-8").strip()
+                logging.info(f"Latest version is: {latest_version}")
             if latest_version and latest_version != app.state.index_version: 
                 logger.info("Reloading index to %s", latest_version)
                 new_engine = load_engine_from_version(base_dir, latest_version)
