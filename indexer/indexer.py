@@ -140,9 +140,9 @@ def get_latest_documents(input_file_directory:str) -> list[dict]:
 def main() -> None:
     input_directory, output_file_base_dir,output_filename, stats_filename = read_env_vars()
     # load latest index 
-    load_latest_index_file(output_base_dir=output_file_base_dir,
-                           index_filename=output_filename,
-                           stats_filename=stats_filename)    
+    load_latest_index_file_if_exists(output_base_dir=output_file_base_dir,
+                                     index_filename=output_filename,
+                                     stats_filename=stats_filename)    
     version = get_version()
     # construct the paths
     (Path(output_file_base_dir)/ version).mkdir(parents=True, exist_ok=True)
