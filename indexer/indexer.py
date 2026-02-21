@@ -71,8 +71,12 @@ def preprocess_document(document: dict) -> Document:
     )
 
 
-def indexing_main(input: str, output: str, stats: str) -> None:
-    documents = get_latest_documents(input)
+def indexing_main(input: str,
+                  output: str,
+                  stats: str, 
+                  output_base: str,
+                  version: str) -> None:
+    documents, document_paths = get_latest_documents(input)
     # preprocess each document and save the result in Document object,
     # then add the document to the index
     add_new_documents(documents)
@@ -80,7 +84,16 @@ def indexing_main(input: str, output: str, stats: str) -> None:
     write_documents_stats(stats)
     # write the result to output file
     write_index_to_binary_file(output, index)
+    # update LATEST.txt file 
+    write_version_to_latest(output_base, version)
+    # delete the document files
+    delete_documents(document_paths)
 
+
+def delete_documents(paths: list[str]):
+    for path in paths: 
+        if os.path.exists(path): 
+            os.remove(path)
 
 # This will be called from outside to add more documents
 def add_new_documents(documents: list[dict]) -> None:
@@ -127,14 +140,16 @@ def load_latest_index_file_if_exists(output_base_dir: str, index_filename: str, 
     index = read_index_from_binary_file(latest_index_filepath)
     read_stats_file(latest_stats_filepath)
 
-def get_latest_documents(input_file_directory:str) -> list[dict]: 
+def get_latest_documents(input_file_directory:str) -> tuple[list[dict], list[str]]: 
     documents: list[dict] = []
+    document_paths: list[str] = []
     directory = Path(input_file_directory)
     for file_path in directory.glob("*.json"):
         print(file_path)
+        document_paths.append(file_path)
         with open(file_path, "r", encoding="utf-8") as f:
             documents.extend(json.load(f))
-    return documents
+    return (documents, document_paths)
 
 
 def main() -> None:
@@ -148,9 +163,8 @@ def main() -> None:
     (Path(output_file_base_dir)/ version).mkdir(parents=True, exist_ok=True)
     output_filepath = Path(output_file_base_dir)/ version / output_filename
     stats_filepath = Path(output_file_base_dir)/ version / stats_filename
-    indexing_main(input_directory, str(output_filepath), str(stats_filepath))
-    # update LATEST file 
-    write_version_to_latest(output_file_base_dir, version)
+    indexing_main(input_directory, str(output_filepath), str(stats_filepath),
+                  output_file_base_dir, version)
 
 if __name__ == "__main__":
     main()
