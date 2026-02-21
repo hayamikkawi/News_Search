@@ -1,0 +1,10 @@
+feeds:
+  - url: "https://feeds.bbci.co.uk/news/rss.xml"
+    name: "BBC News"
+    update_interval: 3600 # seconds
+  - url: "https://www.theguardian.com/world/rss"
+    name: "Guardian World"
+    update_interval: 3600
+  - url: "https://www.ft.com/rss/home"
+    name: "Financial Times"
+    update_interval: 7200

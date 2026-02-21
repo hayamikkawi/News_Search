@@ -1,0 +1,66 @@
+Development Meeting Summary
+Date: 9th Feb 2026
+Location / Platform: Online
+1. Focus of This Week
+The main goal for this week is to connect the entire system into a runnable prototype, moving from isolated components to an end-to-end workflow.
+The priority is integration over optimisation.
+2. Backend–IR Communication (REST API)
+Objective
+Enable communication between the backend and the IR system via a REST API.
+Key Points
+The IR system (indexing, querying, ranking) will be exposed through API endpoints.
+The backend acts as the coordinator:
+Receives requests from the frontend
+Calls the IR components
+Fetches metadata from the database
+Returns results in JSON format
+Outcome
+A minimal but functional API layer that allows queries to reach the IR system.
+3. End-to-End Data Flow (Frontend → IR → Database)
+Target Pipeline
+Frontend → REST API → IR System → Database → Results → Frontend
+Responsibilities
+Frontend:
+Collect user queries (boolean / free-text)
+Send requests to the backend API
+Backend / IR:
+Parse queries
+Execute retrieval on the index
+Fetch document metadata from the database
+Database:
+Store headlines, URLs, timestamps, and other metadata
+Support fast lookup during result construction
+Goal
+Ensure the full pipeline runs correctly for basic search queries.
+4. Deployment Considerations (Cloud)
+Objective
+Prepare the system to be runnable in a cloud environment.
+Scope (Prototype Level)
+Push the backend + IR system to the cloud.
+Ensure:
+API endpoints remain accessible
+The system can run outside local machines
+Note
+This step focuses on deployability, not scalability or performance tuning.
+5. Documentation and Report Draft
+Tasks
+Start drafting the project report alongside implementation.
+Clearly document:
+System architecture
+Data flow
+API design
+Current limitations
+API Documentation
+Define API endpoints clearly (inputs, outputs).
+Keep API design consistent with system architecture described in the report.
+6. Relation to Previous Decisions
+This week’s tasks build directly on earlier meetings:
+RSS-based crawling and time-based storage are assumed to be stable.
+IR components (boolean and free-text search) are now being integrated rather than developed in isolation.
+Frontend design focuses on functionality first, UI refinement later.
+7. Guiding Principle for This Week
+Get the full system running first, then iterate and optimise.
+A working prototype is the highest priority; feature completeness and performance improvements can follow once the system is stable.
+Next Meeting
+Time: Monday, 5:00 PM
+Location: 
