@@ -105,7 +105,7 @@ def write_var_int(value: int, writer: BufferedWriter, offset: int) -> int:
 
 
 def write_str(value: str, writer: BufferedWriter, offset: int) -> int:
-    bytes_written = writer.write(struct.pack(STRUCT_FMT, len(value)))
+    bytes_written = writer.write(struct.pack(STRUCT_FMT, len(value.encode("utf-8"))))
     bytes_written += writer.write(value.encode("utf-8"))
     return offset + bytes_written
 
