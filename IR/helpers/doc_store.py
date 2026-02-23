@@ -2,18 +2,39 @@ from typing import Any, Dict, List, Optional
 import mysql.connector
 import os
 from datetime import datetime
+from mysql.connector import Error
 
 class DocStore:
-
     def __init__(self):
+        self._conn = None
+        self._connect()
+
+    def _connect(self):
         self._conn = mysql.connector.connect(
             host=os.environ.get("DB_HOST", "127.0.0.1"),
             port=int(os.environ.get("DB_PORT", "3306")),
             user=os.environ["DB_USER"],
             password=os.environ["DB_PASSWORD"],
             database=os.environ["DB_NAME"],
+            autocommit=True,
         )
-    
+
+    def _ensure_conn(self):
+        try:
+            # reconnect=True will re-open if dropped
+            self._conn.ping(reconnect=True, attempts=3, delay=2)
+        except Error:
+            # if the connection object is too broken, fully recreate it
+            try:
+                self._conn.close()
+            except Exception:
+                pass
+            self._connect()
+
+    def cursor(self):
+        self._ensure_conn()
+        return self._conn.cursor(dictionary=True)
+
     def fetch_docs_by_ids(self, ids: List[str]) -> List[Dict[str, Any]]:
         if not ids:
             return []
@@ -27,7 +48,7 @@ class DocStore:
             FROM articles
             WHERE id IN ({placeholders})
         """
-        cur = self._conn.cursor(dictionary=True)
+        cur = self.cursor()
         cur.execute(sql, ids)
         rows = cur.fetchall()
         cur.close()
@@ -44,7 +65,7 @@ class DocStore:
             ORDER BY COALESCE(rss_published_at, fetched_at) DESC
             LIMIT %s
         """
-        cur = self._conn.cursor(dictionary=True)
+        cur = self.cursor()
         cur.execute(sql, (limit,))
         rows = cur.fetchall()
         cur.close()
@@ -73,7 +94,7 @@ class DocStore:
                 WHERE COALESCE(rss_published_at, fetched_at) <= %s
             """
             params = (time_to,)
-        cur = self._conn.cursor()
+        cur = self.cursor()
         cur.execute(sql, params)
         ids = {row[0] for row in cur.fetchall()}
         cur.close()

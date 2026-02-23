@@ -145,6 +145,7 @@ def get_latest_documents(input_file_directory:str) -> tuple[list[dict], list[str
     documents: list[dict] = []
     document_paths: list[str] = []
     directory = Path(input_file_directory)
+    logging.info(f"input directory: {directory}")
     for file_path in directory.glob("*.json"):
         logging.info(f"file_path: {file_path}")
         document_paths.append(file_path)
