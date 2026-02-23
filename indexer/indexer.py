@@ -1,5 +1,6 @@
 import json
 from dataclasses import asdict, dataclass
+import logging
 import os
 from pathlib import Path
 from typing import Final
@@ -36,7 +37,7 @@ docs_stats: DocumentsStat = DocumentsStat({})
 
 
 def write_documents_stats(stats_path: str) -> None:
-    # print(asdict(docs_stats))
+    logging.info(asdict(docs_stats))
     with open(stats_path, "w") as f:
         json.dump(asdict(docs_stats), f, indent=2)
 
@@ -145,10 +146,11 @@ def get_latest_documents(input_file_directory:str) -> tuple[list[dict], list[str
     document_paths: list[str] = []
     directory = Path(input_file_directory)
     for file_path in directory.glob("*.json"):
-        print(file_path)
+        logging.info(f"file_path: {file_path}")
         document_paths.append(file_path)
         with open(file_path, "r", encoding="utf-8") as f:
             documents.extend(json.load(f))
+            logging.info(f"documents: {documents}")
     return (documents, document_paths)
 
 
@@ -159,6 +161,7 @@ def main() -> None:
                                      index_filename=output_filename,
                                      stats_filename=stats_filename)    
     version = get_version()
+    logging.info(f"version is {version}")
     # construct the paths
     (Path(output_file_base_dir)/ version).mkdir(parents=True, exist_ok=True)
     output_filepath = Path(output_file_base_dir)/ version / output_filename
