@@ -5,7 +5,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>GlobalSearch - Sentiment-Aware News Search Engine</title>
+<title>GlobalSearch - News Search Engine</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
@@ -148,22 +148,6 @@ Reset
 </label>
 </div>
 </div>
-<!-- Sentiment Bias -->
-<div class="space-y-3">
-<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sentiment</label>
-<div class="flex items-center justify-between text-[1.5rem] px-2" id="sentiment-filter">
-<button class="sentiment-btn hover:scale-125 transition-transform grayscale hover:grayscale-0 opacity-50 hover:opacity-100" data-sentiment="negative" title="Negative">😡</button>
-<button class="sentiment-btn hover:scale-125 transition-transform grayscale hover:grayscale-0 opacity-50 hover:opacity-100" data-sentiment="concerned" title="Concerned">😟</button>
-<button class="sentiment-btn hover:scale-125 transition-transform grayscale hover:grayscale-0 opacity-100 active" data-sentiment="neutral" title="Neutral">😐</button>
-<button class="sentiment-btn hover:scale-125 transition-transform grayscale hover:grayscale-0 opacity-50 hover:opacity-100" data-sentiment="positive" title="Positive">😊</button>
-<button class="sentiment-btn hover:scale-125 transition-transform grayscale hover:grayscale-0 opacity-50 hover:opacity-100" data-sentiment="excellent" title="Excellent">🤩</button>
-</div>
-<div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex">
-<div class="h-full bg-rose-400" style="width: 15%"></div>
-<div class="h-full bg-slate-300" style="width: 30%"></div>
-<div class="h-full bg-emerald-400" style="width: 55%"></div>
-</div>
-</div>
 <!-- Location Filter -->
 <div class="space-y-3">
 <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Geographic Region</label>
@@ -195,12 +179,6 @@ Reset
 Apply Filters
 </button>
 </div>
-<div class="bg-indigo-600 p-6 rounded-3xl text-white shadow-lg space-y-4">
-<p class="text-sm font-medium opacity-80">Today's Sentiment Index</p>
-<div class="text-3xl font-bold">Global Optimism +24%</div>
-<p class="text-xs opacity-70">Based on analysis of 1.2M articles collected over the past 24 hours.</p>
-<button class="w-full py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-bold transition-colors">View Full Report</button>
-</div>
 </aside>
 <!-- Center: Search Results -->
 <main class="col-span-12 lg:col-span-6 space-y-6">
@@ -227,35 +205,12 @@ Apply Filters
                 data-category="Energy & Environment"
                 data-date="January 27, 2026 09:45AM"
                 data-title="Global Superconducting Energy Storage Network Begins Pilot Phase in Northern Europe, Cutting Cross-Border Power Loss by 40%"
-                data-sentiment="Positive Sentiment (0.85)"
-                data-sentiment-icon="😊"
-                data-comments="1.4k"
                 data-image="https://modao.cc/agent-py/media/generated_images/2026-01-27/877841c9f8a04602b3bea22e897dc4ea.jpg">
                 Global Superconducting Energy Storage Network Begins Pilot Phase in Northern Europe, Cutting Cross-Border Power Loss by 40%
               </h2>
 <p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
                 Today, the superconducting grid project led by the International Energy Organization officially completed its first phase of grid connection. The project marks a breakthrough in core technology and provides a new solution for clean energy transmission around the Arctic Circle. Within the next three years, this technology is expected to...
               </p>
-<div class="flex items-center justify-between pt-4 border-t border-slate-50">
-<div class="flex items-center space-x-4">
-<span class="flex items-center text-xs text-slate-500 font-semibold">
-<span class="iconify w-4 h-4 mr-1 text-emerald-500" data-icon="heroicons:face-smile"></span>
-                    Positive Sentiment (0.85)
-                  </span>
-<span class="flex items-center text-xs text-slate-500 font-semibold">
-<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:chat-bubble-left-right"></span>
-                    1.4k Comments
-                  </span>
-</div>
-<div class="flex items-center space-x-2">
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
-<span class="iconify w-5 h-5" data-icon="heroicons:bookmark"></span>
-</button>
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
-<span class="iconify w-5 h-5" data-icon="heroicons:share"></span>
-</button>
-</div>
-</div>
 </div>
 <div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
 <img alt="News Image" class="w-full h-full object-cover" id="img-2" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/877841c9f8a04602b3bea22e897dc4ea.jpg"/>
@@ -275,35 +230,12 @@ Apply Filters
                 data-category="Cutting-Edge Tech"
                 data-date="January 27, 2026 08:30AM"
                 data-title="Universal Quantum Computers Enter External Testing Phase, Programmers Relearn Fundamental Principles"
-                data-sentiment="Objective & Factual (0.92)"
-                data-sentiment-icon="😐"
-                data-comments="890"
                 data-image="https://modao.cc/agent-py/media/generated_images/2026-01-27/d45ed7a9e6e44a669b5526420c09d836.jpg">
                 Universal Quantum Computers Enter External Testing Phase, Programmers Relearn Fundamental Principles
               </h2>
 <p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
                 With IBM and Google's joint lab announcing that the Tianzhou quantum chip series completed 10,000 connectivity tests, the commercialization of the quantum era is gradually unfolding from these laboratories. Tech giants are busy forming new algorithm teams to cope with the upcoming computing power overflow...
               </p>
-<div class="flex items-center justify-between pt-4 border-t border-slate-50">
-<div class="flex items-center space-x-4">
-<span class="flex items-center text-xs text-slate-500 font-semibold">
-<span class="iconify w-4 h-4 mr-1 text-amber-500" data-icon="heroicons:beaker"></span>
-                    Objective & Factual (0.92)
-                  </span>
-<span class="flex items-center text-xs text-slate-500 font-semibold">
-<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:fire-solid"></span>
-                    Rapidly Growing
-                  </span>
-</div>
-<div class="flex items-center space-x-2">
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
-<span class="iconify w-5 h-5" data-icon="heroicons:bookmark"></span>
-</button>
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
-<span class="iconify w-5 h-5" data-icon="heroicons:share"></span>
-</button>
-</div>
-</div>
 </div>
 <div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
 <img alt="Tech Image" class="w-full h-full object-cover" id="img-3" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/d45ed7a9e6e44a669b5526420c09d836.jpg"/>
@@ -324,26 +256,6 @@ Apply Filters
 <p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
                 The United Nations Climate Initiative announced that the world's largest carbon capture facility in Iceland has successfully stored over 500 million tons of CO₂ annually. This breakthrough represents a turning point in climate change mitigation strategies. Scientists estimate that this technology could reduce atmospheric carbon...
               </p>
-<div class="flex items-center justify-between pt-4 border-t border-slate-50">
-<div class="flex items-center space-x-4">
-<span class="flex items-center text-xs text-slate-500 font-semibold">
-<span class="iconify w-4 h-4 mr-1 text-emerald-500" data-icon="heroicons:face-smile"></span>
-                    Positive Sentiment (0.88)
-                  </span>
-<span class="flex items-center text-xs text-slate-500 font-semibold">
-<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:chat-bubble-left-right"></span>
-                    3.2k Comments
-                  </span>
-</div>
-<div class="flex items-center space-x-2">
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
-<span class="iconify w-5 h-5" data-icon="heroicons:bookmark"></span>
-</button>
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
-<span class="iconify w-5 h-5" data-icon="heroicons:share"></span>
-</button>
-</div>
-</div>
 </div>
 <div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
 <img alt="Climate Image" class="w-full h-full object-cover" id="img-4" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/climate-milestone.jpg"/>
@@ -364,26 +276,6 @@ Apply Filters
 <p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
                 Leading medical institutions in Singapore and Switzerland have jointly published a groundbreaking study showing that personalized gene therapy can achieve 95% recovery rates for previously incurable genetic disorders. The cost per treatment has dropped by 60% year-over-year, making it accessible to patients worldwide...
               </p>
-<div class="flex items-center justify-between pt-4 border-t border-slate-50">
-<div class="flex items-center space-x-4">
-<span class="flex items-center text-xs text-slate-500 font-semibold">
-<span class="iconify w-4 h-4 mr-1 text-emerald-500" data-icon="heroicons:face-smile"></span>
-                    Positive Sentiment (0.91)
-                  </span>
-<span class="flex items-center text-xs text-slate-500 font-semibold">
-<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:fire-solid"></span>
-                    Trending Globally
-                  </span>
-</div>
-<div class="flex items-center space-x-2">
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
-<span class="iconify w-5 h-5" data-icon="heroicons:bookmark"></span>
-</button>
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
-<span class="iconify w-5 h-5" data-icon="heroicons:share"></span>
-</button>
-</div>
-</div>
 </div>
 <div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
 <img alt="Healthcare Image" class="w-full h-full object-cover" id="img-5" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/gene-therapy.jpg"/>
@@ -404,26 +296,6 @@ Apply Filters
 <p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
                 The IMF released its latest economic forecast showing that global GDP growth has surpassed expectations, with renewable energy and quantum computing sectors leading the expansion. Emerging markets in Asia and Africa are showing particularly strong performance, contributing 60% of the total growth...
               </p>
-<div class="flex items-center justify-between pt-4 border-t border-slate-50">
-<div class="flex items-center space-x-4">
-<span class="flex items-center text-xs text-slate-500 font-semibold">
-<span class="iconify w-4 h-4 mr-1 text-emerald-500" data-icon="heroicons:face-smile"></span>
-                    Positive Sentiment (0.79)
-                  </span>
-<span class="flex items-center text-xs text-slate-500 font-semibold">
-<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:chat-bubble-left-right"></span>
-                    2.8k Comments
-                  </span>
-</div>
-<div class="flex items-center space-x-2">
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
-<span class="iconify w-5 h-5" data-icon="heroicons:bookmark"></span>
-</button>
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
-<span class="iconify w-5 h-5" data-icon="heroicons:share"></span>
-</button>
-</div>
-</div>
 </div>
 <div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
 <img alt="Economics Image" class="w-full h-full object-cover" id="img-6" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/gdp-growth.jpg"/>
@@ -527,7 +399,7 @@ Apply Filters
 <div class="flex space-x-4">
 <div class="w-1 bg-indigo-500 rounded-full"></div>
 <p class="text-slate-600 leading-relaxed">
-              Based on your current search "2026 Sustainable Energy", GlobalSearch has identified 3 core trends: <b>Strengthened Cross-border Collaboration</b>, <b>Ultra-Low Loss Transmission Technology Breakthrough</b>, and <b>Private Investment Surge Under Policy Guidance</b>. The overall sentiment is highly confident.
+              Based on your current search "2026 Sustainable Energy", GlobalSearch has identified 3 core trends: <b>Strengthened Cross-border Collaboration</b>, <b>Ultra-Low Loss Transmission Technology Breakthrough</b>, and <b>Private Investment Surge Under Policy Guidance</b>.
             </p>
 </div>
 <div class="grid grid-cols-2 gap-4">
@@ -578,21 +450,6 @@ Apply Filters
 
 <!-- Content -->
 <div class="p-8 space-y-6">
-<!-- Sentiment Badge -->
-<div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-<div class="flex items-center space-x-3">
-<span class="text-2xl" id="detail-sentiment-icon">😊</span>
-<div>
-<p class="text-xs text-slate-500 font-medium">Sentiment Analysis</p>
-<p class="text-sm font-bold text-slate-900" id="detail-sentiment">Positive (0.85)</p>
-</div>
-</div>
-<div class="flex items-center space-x-2 text-slate-500">
-<span class="iconify w-5 h-5" data-icon="heroicons:chat-bubble-left-right"></span>
-<span class="font-semibold" id="detail-comments">0</span>
-</div>
-</div>
-
 <!-- Article Body -->
 <div class="prose prose-slate max-w-none">
 <p class="text-lg text-slate-700 leading-relaxed" id="detail-content">
@@ -617,17 +474,7 @@ Key Takeaways
 </div>
 
 <!-- Actions -->
-<div class="flex items-center justify-between pt-6 border-t border-slate-100">
-<div class="flex items-center space-x-2">
-<button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-sm transition-colors flex items-center space-x-2">
-<span class="iconify w-5 h-5" data-icon="heroicons:bookmark"></span>
-<span>Save</span>
-</button>
-<button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-sm transition-colors flex items-center space-x-2">
-<span class="iconify w-5 h-5" data-icon="heroicons:share"></span>
-<span>Share</span>
-</button>
-</div>
+<div class="flex items-center justify-end pt-6 border-t border-slate-100">
 <button class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-colors">
 Read Full Article →
 </button>
@@ -636,51 +483,6 @@ Read Full Article →
 </div>
 </div>
 </div>
-<footer class="mt-20 border-t border-slate-200 bg-white py-12">
-<div class="max-w-[1440px] mx-auto px-10 grid grid-cols-1 md:grid-cols-4 gap-12">
-<div class="space-y-4">
-<div class="flex items-center space-x-2">
-<span class="iconify w-6 h-6 text-indigo-600" data-icon="heroicons:globe-alt-solid"></span>
-<span class="text-lg font-bold">GlobalSearch</span>
-</div>
-<p class="text-xs text-slate-400 leading-loose">
-          2026 © GlobalSearch. <br/>
-          Real-time cross-language, sentiment-aware news search engine.<br/>
-          Data Archive ID: GP-2026-X8
-        </p>
-</div>
-<div>
-<h4 class="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest">Product</h4>
-<ul class="text-sm text-slate-500 space-y-2">
-<li><a class="hover:text-indigo-600" href="#">Pro Subscription</a></li>
-<li><a class="hover:text-indigo-600" href="#">API for Developers</a></li>
-<li><a class="hover:text-indigo-600" href="#">Sentiment Database</a></li>
-</ul>
-</div>
-<div>
-<h4 class="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest">Resources</h4>
-<ul class="text-sm text-slate-500 space-y-2">
-<li><a class="hover:text-indigo-600" href="#">Sentiment Analysis Whitepaper</a></li>
-<li><a class="hover:text-indigo-600" href="#">Privacy & Ethics Standards</a></li>
-<li><a class="hover:text-indigo-600" href="#">Community Forum</a></li>
-</ul>
-</div>
-<div class="space-y-4">
-<h4 class="font-bold text-slate-900 text-sm uppercase tracking-widest">Follow Us</h4>
-<div class="flex space-x-4">
-<button class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all">
-<span class="iconify" data-icon="ri:twitter-x-fill"></span>
-</button>
-<button class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all">
-<span class="iconify" data-icon="ri:linkedin-fill"></span>
-</button>
-<button class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all">
-<span class="iconify" data-icon="ri:github-fill"></span>
-</button>
-</div>
-</div>
-</div>
-</footer>
 
 <!-- External JavaScript -->
 <script src="js/api-service.js"></script>

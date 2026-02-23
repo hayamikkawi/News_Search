@@ -97,7 +97,7 @@ services:
       - "8000:8000"
     volumes:
       # Mount shared indexer output (read-only)
-      - ./shared/indexer/output:/opt/ttds-project/shared/indexer/output:ro
+      - ./shared/indexer/output:/opt/ttds-project/shared/indexer/output:ro./shared/indexer/output:/opt/ttds-project/shared/indexer/output
       # Mount IR code for development (optional, remove in production)
       - ./IR:/app/IR:ro
       - ./common_utils:/app/common_utils:ro

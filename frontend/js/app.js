@@ -90,9 +90,6 @@ function initNewsDetailModal() {
       setElementText('detail-category', title.dataset.category);
       setElementText('detail-title', title.dataset.title);
       setElementText('detail-date', title.dataset.date);
-      setElementText('detail-sentiment', title.dataset.sentiment);
-      setElementText('detail-sentiment-icon', title.dataset.sentimentIcon);
-      setElementText('detail-comments', title.dataset.comments);
       setElementAttribute('detail-image', 'src', title.dataset.image);
       setElementText('detail-content', data.content);
 
@@ -221,28 +218,6 @@ function initDateFilter() {
 }
 
 /**
- * Initialize sentiment filter functionality
- */
-function initSentimentFilter() {
-  const sentimentBtns = document.querySelectorAll('.sentiment-btn');
-  sentimentBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      // Remove active state from all buttons
-      sentimentBtns.forEach(b => {
-        b.classList.remove('opacity-100', 'active');
-        b.classList.add('opacity-50', 'grayscale');
-        b.style.filter = '';
-      });
-      // Add active state to clicked button
-      btn.classList.add('opacity-100', 'active');
-      btn.classList.remove('opacity-50', 'grayscale');
-      btn.style.filter = 'none';
-      console.log('Selected sentiment:', btn.dataset.sentiment);
-    });
-  });
-}
-
-/**
  * Initialize apply filters button
  */
 function initApplyFilters() {
@@ -264,12 +239,10 @@ function initApplyFilters() {
     });
 
     const selectedDate = document.querySelector('.date-filter-btn.active');
-    const selectedSentiment = document.querySelector('.sentiment-btn.active');
 
     console.log('Applied Filters:', {
       dateFilter: selectedDate ? selectedDate.dataset.value : 'none',
-      contentTypes: selectedContentTypes,
-      sentiment: selectedSentiment ? selectedSentiment.dataset.sentiment : 'none'
+      contentTypes: selectedContentTypes
     });
 
     // Show feedback to user
@@ -600,7 +573,6 @@ function initApp() {
 
   // Initialize filters
   initDateFilter();
-  initSentimentFilter();
   initApplyFilters();
 
   // Initialize search modes
