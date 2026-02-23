@@ -54,7 +54,7 @@ services:
       # Indexer Configuration
       INDEXER_OUTPUT_DIR: /indexer/input
       INDEXER_OUTPUT_FILENAME: docs.json
-      INDEXER_FLUSH_MODE: append
+      INDEXER_FLUSH_MODE: new_file
       INDEXER_DEDUP_THRESHOLD_MB: 100
       SAVE_CONTENT_TO_DB: "false"
 

@@ -163,7 +163,7 @@ class CrawlerCoordinator:
                 # Can be configured via INDEXER_FLUSH_MODE environment variable
                 from ..config import INDEXER_CONFIG
 
-                flush_mode = getattr(INDEXER_CONFIG, "flush_mode", "append")
+                flush_mode = getattr(INDEXER_CONFIG, "flush_mode", "new_file")
 
                 # Safety check: Warn if using append_only without dedup plan
                 if flush_mode == "append_only":
