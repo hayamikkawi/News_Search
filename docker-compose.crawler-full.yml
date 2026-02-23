@@ -86,6 +86,51 @@ services:
       retries: 5
       start_period: 300s
 
+  # IR Service (REST API)
+  ttds-ir:
+    build:
+      context: .
+      dockerfile: IR/dockerfile
+    container_name: ttds_ir
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount shared indexer output (read-only)
+      - ./shared/indexer/output:/opt/ttds-project/shared/indexer/output:ro./shared/indexer/output:/opt/ttds-project/shared/indexer/output
+      # Mount IR code for development (optional, remove in production)
+      - ./IR:/app/IR:ro
+      - ./common_utils:/app/common_utils:ro
+    environment:
+      # Database Configuration
+      DB_HOST: ttds-db
+      DB_PORT: 3306
+      DB_USER: ttds_app
+      DB_PASSWORD: ttds#123
+      DB_NAME: ttds_search_engine
+
+      # Index Configuration
+      INDEX_BASE_DIR: /opt/ttds-project/shared/indexer/output
+      INDEX_FILENAME: index.txt
+      DOCS_STAT_FILENAME: documents_stats.json
+
+      # CORS Configuration
+      FRONTEND_ORIGIN: http://localhost
+
+      # Python settings
+      PYTHONUNBUFFERED: 1
+    depends_on:
+      ttds-db:
+        condition: service_healthy
+    networks:
+      - ttds-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   # UI Service
   ttds-ui:
     image: nginx:alpine
@@ -95,9 +140,12 @@ services:
       - "80:80"
     volumes:
       - ./frontend/GlobalSearch.html:/usr/share/nginx/html/GlobalSearch.html:ro
+      - ./frontend/css:/usr/share/nginx/html/css:ro
+      - ./frontend/js:/usr/share/nginx/html/js:ro
       - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - ttds-db
+      - ttds-ir
     networks:
       - ttds-network
     healthcheck:
