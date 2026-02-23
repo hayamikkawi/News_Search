@@ -1,6 +1,5 @@
 import json
 from dataclasses import asdict, dataclass
-import logging
 import os
 from pathlib import Path
 from typing import Final
@@ -19,7 +18,8 @@ ID_KEY: Final = "id"
 HEADLINE_KEY: Final = "title"
 DESC_KEY: Final = "description"
 CONTENT_KEY: Final = "content"
-
+import logging, sys
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 # Data type for documents
 @dataclass(frozen=True)
