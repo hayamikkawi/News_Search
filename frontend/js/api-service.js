@@ -5,8 +5,8 @@
  * API Configuration
  */
 const API_CONFIG = {
-  // Base URL - automatically uses relative path when deployed
-  baseURL: '/api',
+  // Base URL - points to backend server
+  baseURL: 'http://localhost:8000',
   timeout: 30000, // 30 seconds
   retries: 2,
 };
@@ -118,7 +118,7 @@ class APIService {
    * Search news articles
    * @param {Object} params - Search parameters
    * @param {string} params.query - Search query text
-   * @param {string} params.query_type - Query type: 'free_text' or 'boolean'
+   * @param {string} params.query_type - Query type: 'FreeText' or 'Bool'
    * @param {number} params.limit - Number of results per page (default: 10)
    * @param {number} params.offset - Offset for pagination (default: 0)
    * @param {string} params.time_from - Filter by start date (ISO format)
@@ -128,7 +128,7 @@ class APIService {
   async search(params) {
     const {
       query,
-      query_type = 'free_text',
+      query_type = 'FreeText',
       limit = 10,
       offset = 0,
       time_from,

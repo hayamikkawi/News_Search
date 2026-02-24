@@ -1,11 +1,197 @@
 // GlobalSearch - API Integration Module
 // This file contains functions to integrate backend API with the UI
 
+// ========================================
+// SEARCH HISTORY MANAGEMENT
+// ========================================
+
+const SEARCH_HISTORY_KEY = 'global_search_history';
+const MAX_HISTORY_ITEMS = 10;
+
+/**
+ * Get search history from localStorage
+ */
+function getSearchHistory() {
+  try {
+    const history = localStorage.getItem(SEARCH_HISTORY_KEY);
+    return history ? JSON.parse(history) : [];
+  } catch (e) {
+    console.error('Failed to load search history:', e);
+    return [];
+  }
+}
+
+/**
+ * Save search query to history
+ */
+function saveToHistory(query, queryType = 'FreeText') {
+  if (!query || query.trim().length === 0) return;
+  
+  try {
+    let history = getSearchHistory();
+    
+    // Remove duplicate if exists
+    history = history.filter(item => item.query.toLowerCase() !== query.toLowerCase());
+    
+    // Add new search at the beginning
+    history.unshift({
+      query: query.trim(),
+      queryType: queryType,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Keep only MAX_HISTORY_ITEMS
+    history = history.slice(0, MAX_HISTORY_ITEMS);
+    
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.error('Failed to save search history:', e);
+  }
+}
+
+/**
+ * Clear search history
+ */
+function clearSearchHistory() {
+  try {
+    localStorage.removeItem(SEARCH_HISTORY_KEY);
+    updateHistoryDropdown();
+  } catch (e) {
+    console.error('Failed to clear search history:', e);
+  }
+}
+
+/**
+ * Display search history dropdown
+ */
+function showHistoryDropdown() {
+  const dropdown = document.getElementById('search-history-dropdown');
+  if (!dropdown) return;
+  
+  const history = getSearchHistory();
+  
+  if (history.length === 0) {
+    dropdown.innerHTML = `
+      <div class="p-4 text-center text-slate-400 text-sm">
+        No search history yet
+      </div>
+    `;
+  } else {
+    const html = history.map(item => {
+      const timeAgo = getTimeAgo(item.timestamp);
+      const typeLabel = item.queryType === 'Bool' ? 'Boolean' : 'Free Text';
+      
+      return `
+        <div class="p-3 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center justify-between search-history-item" data-query="${escapeHtml(item.query)}" data-type="${item.queryType}">
+          <div class="flex-1 min-w-0">
+            <span class="text-slate-700 font-medium truncate block">${escapeHtml(item.query)}</span>
+            <span class="text-xs text-slate-400">${typeLabel} · ${timeAgo}</span>
+          </div>
+          <span class="iconify text-slate-300 ml-2" data-icon="heroicons:clock"></span>
+        </div>
+      `;
+    }).join('');
+    
+    dropdown.innerHTML = html + `
+      <div class="border-t border-slate-100 mt-2 pt-2">
+        <button id="clear-history-btn" class="w-full p-2 text-xs text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+          Clear History
+        </button>
+      </div>
+    `;
+    
+    // Add event listeners
+    dropdown.querySelectorAll('.search-history-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const query = item.dataset.query;
+        const queryType = item.dataset.type;
+        
+        // Set the input value
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+          searchInput.value = query;
+        }
+        
+        // Hide dropdown
+        dropdown.classList.add('hidden');
+        
+        // Perform search
+        const filters = getActiveDateFilter();
+        performSearch(query, queryType, filters);
+      });
+    });
+    
+    // Clear history button
+    const clearBtn = document.getElementById('clear-history-btn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('Clear all search history?')) {
+          clearSearchHistory();
+        }
+      });
+    }
+  }
+  
+  dropdown.classList.remove('hidden');
+}
+
+/**
+ * Hide history dropdown
+ */
+function hideHistoryDropdown() {
+  const dropdown = document.getElementById('search-history-dropdown');
+  if (dropdown) {
+    dropdown.classList.add('hidden');
+  }
+}
+
+/**
+ * Update history dropdown (refresh content)
+ */
+function updateHistoryDropdown() {
+  const dropdown = document.getElementById('search-history-dropdown');
+  if (dropdown && !dropdown.classList.contains('hidden')) {
+    showHistoryDropdown();
+  }
+}
+
+/**
+ * Get relative time string
+ */
+function getTimeAgo(timestamp) {
+  const now = new Date();
+  const past = new Date(timestamp);
+  const diffMs = now - past;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  return past.toLocaleDateString();
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ========================================
+// DISPLAY FUNCTIONS
+// ========================================
+
 /**
  * Display loading state
  */
 function showLoading(message = 'Searching...') {
-  const resultsContainer = document.querySelector('.grid.gap-6');
+  const resultsContainer = document.getElementById('search-results-container');
   if (!resultsContainer) return;
   
   resultsContainer.innerHTML = `
@@ -20,7 +206,7 @@ function showLoading(message = 'Searching...') {
  * Display error message
  */
 function showError(message) {
-  const resultsContainer = document.querySelector('.grid.gap-6');
+  const resultsContainer = document.getElementById('search-results-container');
   if (!resultsContainer) return;
   
   resultsContainer.innerHTML = `
@@ -42,7 +228,7 @@ function showError(message) {
  * Display empty results
  */
 function showEmptyResults(query) {
-  const resultsContainer = document.querySelector('.grid.gap-6');
+  const resultsContainer = document.getElementById('search-results-container');
   if (!resultsContainer) return;
   
   resultsContainer.innerHTML = `
@@ -108,10 +294,14 @@ function extractDomain(url) {
  * Render search results
  */
 function renderResults(results) {
-  const resultsContainer = document.querySelector('.grid.gap-6');
-  if (!resultsContainer) return;
+  const resultsContainer = document.getElementById('search-results-container');
+  if (!resultsContainer) {
+    console.error('Search results container not found');
+    return;
+  }
   
   if (!results || results.length === 0) {
+    resultsContainer.innerHTML = '<div class="text-center py-12 text-slate-500">No results found</div>';
     return;
   }
 
@@ -159,7 +349,7 @@ function renderResults(results) {
 /**
  * Perform search based on current mode
  */
-async function performSearch(query, queryType = 'free_text', filters = {}) {
+async function performSearch(query, queryType = 'FreeText', filters = {}) {
   if (!query || query.trim().length === 0) {
     showError('Please enter a search query');
     return;
@@ -190,6 +380,9 @@ async function performSearch(query, queryType = 'free_text', filters = {}) {
     const response = await apiService.search(searchParams);
     
     console.log('Search results:', response);
+
+    // Save to search history (on successful search)
+    saveToHistory(query.trim(), queryType);
 
     // Update results count
     const totalResults = response.total || 0;
@@ -222,20 +415,14 @@ async function performSearch(query, queryType = 'free_text', filters = {}) {
  * Update results count display
  */
 function updateResultsCount(count, query) {
-  // Find or create results count element
-  let countElement = document.getElementById('results-count');
-  if (!countElement) {
-    const resultsSection = document.querySelector('.grid.gap-6');
-    if (resultsSection && resultsSection.parentElement) {
-      countElement = document.createElement('div');
-      countElement.id = 'results-count';
-      countElement.className = 'mb-4 text-slate-600 font-semibold';
-      resultsSection.parentElement.insertBefore(countElement, resultsSection);
-    }
-  }
+  const countElement = document.getElementById('results-count');
   
   if (countElement) {
-    countElement.textContent = `Found ${count} result${count !== 1 ? 's' : ''} for "${query}"`;
+    if (count === 0) {
+      countElement.textContent = `No results found for "${query}"`;
+    } else {
+      countElement.textContent = `Found ${count} result${count !== 1 ? 's' : ''} for "${query}"`;
+    }
   }
 }
 
@@ -319,12 +506,28 @@ function initSearchWithAPI() {
     const handleSearch = () => {
       const query = searchInput.value;
       const filters = getActiveDateFilter();
-      performSearch(query, 'free_text', filters);
+      performSearch(query, 'FreeText', filters);
+      hideHistoryDropdown();
     };
     
     freetextSearchBtn.addEventListener('click', handleSearch);
     searchInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') handleSearch();
+      if (e.key === 'Enter') {
+        handleSearch();
+      }
+    });
+    
+    // Show history dropdown on focus
+    searchInput.addEventListener('focus', () => {
+      showHistoryDropdown();
+    });
+    
+    // Hide history dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('search-history-dropdown');
+      if (dropdown && !dropdown.contains(e.target) && e.target !== searchInput) {
+        hideHistoryDropdown();
+      }
     });
   }
 
@@ -361,7 +564,7 @@ function initSearchWithAPI() {
       
       const query = queryParts.join(' ');
       const filters = getActiveDateFilter();
-      await performSearch(query, 'boolean', filters);
+      await performSearch(query, 'Bool', filters);
     });
   }
 }
