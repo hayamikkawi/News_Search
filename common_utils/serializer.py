@@ -1,9 +1,10 @@
 import mmap
 import struct
 from io import BufferedWriter
+from pathlib import Path
 from typing import Final, Tuple
 
-from .types import InvertedIndex, Posting
+from .common_types import InvertedIndex, Posting
 
 STRUCT_FMT = "@I"
 WORD_SIZE: Final = struct.calcsize(STRUCT_FMT)
@@ -37,7 +38,7 @@ def read_var_int(data: bytes | mmap.mmap, offset: int) -> Tuple[int, int]:
     return value, offset + bytes_read
 
 
-def read_index_from_binary_file(index_path: str) -> InvertedIndex:
+def read_index_from_binary_file(index_path: Path) -> InvertedIndex:
     index = {}
 
     # Need to open with '+' otherwise permission denied
@@ -110,7 +111,9 @@ def write_str(value: str, writer: BufferedWriter, offset: int) -> int:
     return offset + bytes_written
 
 
-def write_index_to_binary_file(index_file: str, index: InvertedIndex) -> None:
+def write_index_to_binary_file(index_file: str | Path, index: InvertedIndex) -> None:
+    index_file = Path(index_file)
+
     def compute_posting_deltas(sorted_postings: list[int]) -> list[int]:
         posting_deltas = []
 
@@ -157,7 +160,8 @@ def write_index_to_binary_file(index_file: str, index: InvertedIndex) -> None:
             head = write_fixed_int(token_offset, index_output_file, head)
 
 
-def query_index_from_binary_file(index_path: str, token: str) -> Posting:
+def query_index_from_binary_file(index_path: str | Path, token: str) -> Posting:
+    index_path = Path(index_path)
     posting = dict()
 
     with open(index_path, "rb+") as index_file:

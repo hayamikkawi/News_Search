@@ -1,9 +1,9 @@
 import re
 from typing import Callable, Final, Iterable, Optional
 
-from common_utils.types import DocumentsStat, DocID, InvertedIndex
-from IR.ir.query_handler import QueryHandler
+from common_utils.common_types import DocID, DocumentsStat, InvertedIndex
 from common_utils.preprocessor import preprocess_line
+from IR.ir.query_handler import QueryHandler
 
 BOOLEANS_RE: Final = re.compile(r"(.*?) (AND NOT|OR NOT|AND|OR|NOT) (.*)")
 PHRASE_RE: Final = re.compile(r"\"(.*) (.*)\"")
@@ -12,10 +12,11 @@ PROXIMITY_RE: Final = re.compile(r"#(\d+)\((.*), (.*)\)")
 
 class BooleanQueryHandler(QueryHandler):
     def handle_query(
-        self, query: str,
+        self,
+        query: str,
         index: InvertedIndex,
-        documents_stat: DocumentsStat, 
-        candidate_ids: Optional[Iterable[DocID]] = None
+        documents_stat: DocumentsStat,
+        candidate_ids: Optional[Iterable[DocID]] = None,
     ) -> list[DocID]:
         return list(boolean_search(query, index))
 
