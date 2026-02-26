@@ -102,7 +102,7 @@ class MySQLDatabase:
                     CREATE TABLE IF NOT EXISTS articles (
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         url VARCHAR(512) NOT NULL,
-                        final_url VARCHAR(512),
+                        final_url VARCHAR(1024),
                         feed_url VARCHAR(191),
                         rss_title VARCHAR(512),
                         rss_published_at DATETIME NULL,
