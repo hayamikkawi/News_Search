@@ -37,7 +37,7 @@ docs_stats: DocumentsStat = DocumentsStat({})
 
 
 def write_documents_stats(stats_path: str) -> None:
-    logging.info(asdict(docs_stats))
+    # logging.info(asdict(docs_stats))
     with open(stats_path, "w") as f:
         json.dump(asdict(docs_stats), f, indent=2)
 
