@@ -9,7 +9,7 @@ class CrawlerConfig:
         "CRAWLER_USER_AGENT", "TTDS-SearchEngine-Crawler (academic; contact: s2795693@deu.ac.uk)"
     )
     timeout_seconds: int = int(os.getenv("CRAWLER_TIMEOUT_SECONDS", "15"))
-    max_items_per_feed: int = int(os.getenv("MAX_ITEMS_PER_FEED", "20"))
+    max_items_per_feed: int = int(os.getenv("MAX_ITEMS_PER_FEED", "200"))
     sleep_seconds: float = float(os.getenv("CRAWLER_SLEEP_SECONDS", "1.0"))
     jitter_seconds: float = float(os.getenv("CRAWLER_JITTER_SECONDS", "0.5"))
     output_path: str = os.getenv("CRAWLER_OUTPUT_PATH", "output/articles.jsonl")

@@ -45,7 +45,7 @@ services:
       MYSQL_POOL_SIZE: 5
 
       # Crawler Behavior Configuration
-      MAX_ITEMS_PER_FEED: 20
+      MAX_ITEMS_PER_FEED: 200
       CRAWLER_TIMEOUT_SECONDS: 15
       CRAWLER_SLEEP_SECONDS: 1.0
       CRAWLER_JITTER_SECONDS: 0.5
