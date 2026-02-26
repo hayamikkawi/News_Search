@@ -39,7 +39,7 @@ class CrawlerCoordinator:
         self,
         database: MySQLDatabase,
         indexer: FileBasedIndexer,
-        save_content_to_db: bool = False,
+        save_content_to_db: bool = True,
     ):
         """
         Initialize the coordinator
@@ -47,7 +47,7 @@ class CrawlerCoordinator:
         Args:
             database: MySQL Database instance
             indexer: FileBasedIndexer instance
-            save_content_to_db: Whether to save content back to the database (default False to save storage space)
+            save_content_to_db: Whether to save content back to the database (default True)
         """
         self.database = database
         self.indexer = indexer
@@ -223,7 +223,7 @@ class CrawlerCoordinator:
 def create_coordinator(
     database: MySQLDatabase,
     indexer: FileBasedIndexer,
-    save_content_to_db: bool = False,
+    save_content_to_db: bool = True,
 ) -> CrawlerCoordinator:
     """
     Create a coordinator instance

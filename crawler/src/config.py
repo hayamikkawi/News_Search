@@ -36,8 +36,8 @@ class IndexerConfig:
     output_dir: str = os.getenv("INDEXER_OUTPUT_DIR", "../indexer/input")
     # Output filename for Indexer
     output_filename: str = os.getenv("INDEXER_OUTPUT_FILENAME", "docs.json")
-    # Whether to save content to the database (False saves only metadata to save space)
-    save_content_to_db: bool = os.getenv("SAVE_CONTENT_TO_DB", "false").lower() == "true"
+    # Whether to save content to the database (enabled by default)
+    save_content_to_db: bool = os.getenv("SAVE_CONTENT_TO_DB", "true").lower() == "true"
     # JSON flush mode: "append" (merge with dedup), "overwrite" (replace), "append_only" (fast, no dedup)
     flush_mode: str = os.getenv("INDEXER_FLUSH_MODE", "new_file")
     # File size threshold (MB) for choosing dedup strategy
