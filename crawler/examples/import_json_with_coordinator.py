@@ -6,7 +6,7 @@ This script reads a JSON file containing news articles, converts them to Article
 and processes them through the coordinator which:
 1. Stores metadata to MySQL database (ttds_mysql container)
 2. Sends content to FileBasedIndexer to create docs.json
-3. Optionally saves content back to database (disabled by default)
+3. Saves content back to database (enabled by default)
 
 Features:
 - Streaming JSON parsing for large files (250MB+)
@@ -16,7 +16,7 @@ Features:
 - Outputs docs.json in correct format for the indexer
 
 Usage:
-    python import_json_with_coordinator.py --input /path/to/news.json [--batch-size 1000] [--dry-run] [--save-content]
+    python import_json_with_coordinator.py --input /path/to/news.json [--batch-size 1000] [--dry-run] [--no-save-content]
 
 Requirements:
     - Existing MySQL database (ttds_mysql container)
@@ -65,6 +65,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+COMMONCRAWL_FEED_URL = "https://data.commoncrawl.org"
+
 
 class JSONStreamProcessor:
     """Process JSON file with streaming parser and coordinator integration."""
@@ -73,7 +75,8 @@ class JSONStreamProcessor:
         self,
         coordinator: CrawlerCoordinator,
         batch_size: int = 1000,
-        dry_run: bool = False
+        dry_run: bool = False,
+        save_content_to_db: bool = True,
     ):
         """
         Initialize the processor.
@@ -82,10 +85,12 @@ class JSONStreamProcessor:
             coordinator: CrawlerCoordinator instance
             batch_size: Number of records to process in each batch
             dry_run: If True, don't actually insert into database or indexer
+            save_content_to_db: If True, save article content back to database
         """
         self.coordinator = coordinator
         self.batch_size = batch_size
         self.dry_run = dry_run
+        self.save_content_to_db = save_content_to_db
         self.stats = {
             'total': 0,
             'processed': 0,
@@ -109,7 +114,7 @@ class JSONStreamProcessor:
         - Set `extracted["text_ok"] = True` (required by coordinator)
 
         Default values:
-        - `feed_url=None`
+        - `feed_url=https://data.commoncrawl.org`
         - `fetched_at=current_time`
         - `http_status=200`
         - `error=None`
@@ -146,7 +151,7 @@ class JSONStreamProcessor:
         article = ArticleRecord(
             url=url,
             final_url=url,  # Same as url
-            feed_url=None,
+            feed_url=COMMONCRAWL_FEED_URL,
             rss_title=None,
             rss_published_at=rss_published_at,
             fetched_at=datetime.now().isoformat(),
@@ -236,7 +241,10 @@ class JSONStreamProcessor:
             True if successful, False otherwise
         """
         logger.info(f"Starting processing of {input_file}")
-        logger.info(f"Batch size: {self.batch_size}, Dry run: {self.dry_run}")
+        logger.info(
+            f"Batch size: {self.batch_size}, Dry run: {self.dry_run}, "
+            f"save_content_to_db: {self.save_content_to_db}"
+        )
 
         batch = []
         start_time = time.time()
@@ -302,6 +310,8 @@ class JSONStreamProcessor:
             self.stats['batches'] += 1
             self.stats['metadata_saved'] += len(batch)  # Simulated
             self.stats['indexer_sent'] += len(batch)    # Simulated
+            if self.save_content_to_db:
+                self.stats['content_saved'] += len(batch)  # Simulated
             return
 
         try:
@@ -331,12 +341,15 @@ def main():
                        help='Batch size for processing (default: 1000)')
     parser.add_argument('--dry-run', action='store_true',
                        help='Dry run mode (no database or indexer operations)')
-    parser.add_argument('--save-content', action='store_true',
-                       help='Save content back to database (default: False)')
+    parser.add_argument('--save-content', dest='save_content', action='store_true',
+                       help='Save content back to database (default: True)')
+    parser.add_argument('--no-save-content', dest='save_content', action='store_false',
+                       help='Do not save content back to database')
     parser.add_argument('--output-dir', '-o', default='./output',
                        help='Output directory for docs.json (default: ./output)')
     parser.add_argument('--output-filename', default='docs.json',
                        help='Output filename for indexer (default: docs.json)')
+    parser.set_defaults(save_content=True)
 
     args = parser.parse_args()
 
@@ -357,7 +370,7 @@ def main():
                 user=MYSQL_CONFIG.user,
                 password=MYSQL_CONFIG.password,
                 # database=MYSQL_CONFIG.database,
-                database="test_db",  # Use test database to avoid affecting production data
+                database="ttds_search_engine",  # Use test database to avoid affecting production data
                 pool_size=MYSQL_CONFIG.pool_size,
             )
             logger.info("Database initialized")
@@ -390,7 +403,8 @@ def main():
     processor = JSONStreamProcessor(
         coordinator=coordinator,
         batch_size=args.batch_size,
-        dry_run=args.dry_run
+        dry_run=args.dry_run,
+        save_content_to_db=args.save_content
     )
 
     # Process file

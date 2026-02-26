@@ -80,7 +80,7 @@ INDEXER_OUTPUT_DIR=../indexer/input
 INDEXER_FLUSH_MODE=new_file
 # (optional, used only for legacy single-file modes)
 INDEXER_OUTPUT_FILENAME=docs.json
-SAVE_CONTENT_TO_DB=false
+SAVE_CONTENT_TO_DB=true
 ```
 
 ## 5. Workflow
