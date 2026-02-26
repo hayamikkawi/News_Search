@@ -101,9 +101,9 @@ class MySQLDatabase:
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS articles (
                         id INT AUTO_INCREMENT PRIMARY KEY,
-                        url VARCHAR(255) NOT NULL,
+                        url VARCHAR(512) NOT NULL,
                         final_url VARCHAR(512),
-                        feed_url VARCHAR(255),
+                        feed_url VARCHAR(191),
                         rss_title VARCHAR(512),
                         rss_published_at DATETIME NULL,
                         fetched_at DATETIME NOT NULL,
