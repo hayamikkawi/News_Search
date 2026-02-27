@@ -143,9 +143,9 @@ def load_latest_index_file_if_exists(output_base_dir: str, index_filename: str, 
     latest_stats_filepath = Path(output_base_dir) / version / stats_filename
     global index
     index = read_index_from_binary_file(latest_index_filepath)
-    logging.log("Reading the latest index..")
+    logging.info("Reading the latest index..")
     read_stats_file(latest_stats_filepath)
-    logging.log(f"Done reading the latest index, size {os.path.getsize(latest_index_filepath)}")
+    logging.info(f"Done reading the latest index, size {os.path.getsize(latest_index_filepath)}")
 
 def get_latest_documents(input_file_directory:str) -> tuple[list[dict], list[str]]: 
     documents: list[dict] = []
