@@ -73,15 +73,18 @@ def preprocess_document(document: dict) -> Document:
     return Document(document[ID_KEY], processed_headline, processed_desc, processed_content)
 
 
-def indexing_main(input: str, output: str, stats: str, output_base: str, version: str) -> None:
+def indexing_main(input: str,
+                  output: str,
+                  stats: str,
+                  output_base: str,
+                  version: str) -> None:
     # documents, document_paths = get_latest_documents(input)
     document_paths = get_latest_documents_paths(input)
     # preprocess each document and save the result in Document object,
     # then add the document to the index
     for document_path in document_paths:
-        with open(document_path, "r", encoding="utf-8") as f:
-            documents = json.load(f)
-            add_new_documents(documents)
+        documents = json.load(document_path)
+        add_new_documents(documents)
     # write the stats into the stats file
     write_documents_stats(stats)
     # write the result to output file
@@ -151,8 +154,12 @@ def load_latest_index_file_if_exists(output_base_dir: str, index_filename: str, 
     read_stats_file(latest_stats_filepath)
     logging.info(f"Done reading the latest index, size {os.path.getsize(latest_index_filepath)}")
 
+<<<<<<< HEAD
 
 def get_latest_documents_paths(input_file_directory: str) -> list[str]:
+=======
+def get_latest_documents_paths(input_file_directory:str) -> list[str]:
+>>>>>>> cbc9fd4 (added some enhancements to the indexer)
     document_paths: list[str] = []
     directory = Path(input_file_directory)
     logging.info(f"input directory: {directory}")
@@ -160,8 +167,12 @@ def get_latest_documents_paths(input_file_directory: str) -> list[str]:
         document_paths.append(file_path)
     return document_paths
 
+<<<<<<< HEAD
 
 def get_latest_documents(input_file_directory: str) -> tuple[list[dict], list[str]]:
+=======
+def get_latest_documents(input_file_directory:str) -> tuple[list[dict], list[str]]:
+>>>>>>> cbc9fd4 (added some enhancements to the indexer)
     documents: list[dict] = []
     document_paths: list[str] = []
     directory = Path(input_file_directory)
