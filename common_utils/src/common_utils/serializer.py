@@ -33,7 +33,7 @@ def read_var_int(data: bytes | mmap.mmap, offset: int) -> Tuple[int, int]:
 
         return num | rest_num, 1 + n_bytes_read
 
-    value, bytes_read = decode_vbytes(data[offset:])
+    value, bytes_read = decode_vbytes(data, offset)
     return value, offset + bytes_read
 
 
