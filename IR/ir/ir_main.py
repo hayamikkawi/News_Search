@@ -1,5 +1,6 @@
 import json
 from enum import Enum
+import logging
 from typing import Iterable, Optional
 from IR.ir.boolean_query_handler import BooleanQueryHandler
 from common_utils.types import DocumentsStat, DocID, InvertedIndex
@@ -21,7 +22,9 @@ class IRMain:
         self.__load_doc_stats(doc_stat_filepath)
 
     def __load_index(self, index_filepath):
+        logging.info("Started loading index")
         self.index = read_index_from_binary_file(index_filepath)
+        logging.info("Done loading index")
 
     def __load_doc_stats(self, doc_stat_filepath):
         with open(doc_stat_filepath, "r", encoding="utf-8") as f:
