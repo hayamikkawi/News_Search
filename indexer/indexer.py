@@ -83,8 +83,9 @@ def indexing_main(input: str,
     # preprocess each document and save the result in Document object,
     # then add the document to the index
     for document_path in document_paths:
-        documents = json.load(document_path)
-        add_new_documents(documents)
+        with open(document_path, "r", encoding="utf-8") as f:
+            documents = json.load(f)
+            add_new_documents(documents)
     # write the stats into the stats file
     write_documents_stats(stats)
     # write the result to output file
