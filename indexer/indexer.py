@@ -74,10 +74,13 @@ def preprocess_document(document: dict) -> Document:
 
 
 def indexing_main(input: str, output: str, stats: str, output_base: str, version: str) -> None:
-    documents, document_paths = get_latest_documents(input)
+    # documents, document_paths = get_latest_documents(input)
+    document_paths = get_latest_documents_paths(input)
     # preprocess each document and save the result in Document object,
     # then add the document to the index
-    add_new_documents(documents)
+    for document_path in document_paths:
+        documents = json.load(document_path)
+        add_new_documents(documents)
     # write the stats into the stats file
     write_documents_stats(stats)
     # write the result to output file
@@ -146,6 +149,15 @@ def load_latest_index_file_if_exists(output_base_dir: str, index_filename: str, 
     logging.info("Reading the latest index..")
     read_stats_file(latest_stats_filepath)
     logging.info(f"Done reading the latest index, size {os.path.getsize(latest_index_filepath)}")
+
+
+def get_latest_documents_paths(input_file_directory: str) -> list[str]:
+    document_paths: list[str] = []
+    directory = Path(input_file_directory)
+    logging.info(f"input directory: {directory}")
+    for file_path in directory.glob("*.json"):
+        document_paths.append(file_path)
+    return document_paths
 
 
 def get_latest_documents(input_file_directory: str) -> tuple[list[dict], list[str]]:
