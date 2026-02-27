@@ -38,7 +38,6 @@ class FreeTextQueryHandler(QueryHandler):
                 dl = doc_lengths[doc_id]
                 denom = tf + k1 * (1 - b + b * dl / avg_doc_len)
                 score = idf * (tf * (k1 + 1)) / denom
-                logging.info(f"score: {score}.")
                 scores[doc_id] += score
             # logging.info(f"scores: {scores}.")
         return sorted(scores.items(), key=lambda x: x[1], reverse=True)
