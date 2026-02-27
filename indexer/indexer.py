@@ -151,7 +151,7 @@ def get_latest_documents(input_file_directory:str) -> tuple[list[dict], list[str
         document_paths.append(file_path)
         with open(file_path, "r", encoding="utf-8") as f:
             documents.extend(json.load(f))
-            logging.info(f"documents: {documents}")
+            # logging.info(f"documents: {documents}")
     return (documents, document_paths)
 
 
