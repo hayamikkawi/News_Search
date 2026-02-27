@@ -1,4 +1,5 @@
 import json
+import logging
 from enum import Enum
 from typing import Iterable, Optional
 
@@ -25,8 +26,9 @@ class IRMain:
         self.__load_doc_stats(doc_stat_filepath)
 
     def __load_index(self, index_filepath):
-        # self.index = read_index_from_binary_file(index_filepath)
+        logging.info("Started loading index")
         self.index = InvertedIndex.from_binary_file(index_filepath)
+        logging.info("Done loading index")
 
     def __load_doc_stats(self, doc_stat_filepath):
         with open(doc_stat_filepath, "r", encoding="utf-8") as f:
