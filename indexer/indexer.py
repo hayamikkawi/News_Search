@@ -37,9 +37,10 @@ docs_stats: DocumentsStat = DocumentsStat({})
 
 
 def write_documents_stats(stats_path: str) -> None:
-    # logging.info(asdict(docs_stats))
+    logging.info(f"started writing documents stats to path: {stats_path}")
     with open(stats_path, "w") as f:
         json.dump(asdict(docs_stats), f, indent=2)
+    logging.info(f"done writing documents stats")
 
 def write_version_to_latest(output_base_dir: str, version: str):
     latest_filepath = Path(output_base_dir)/"LATEST.txt"
@@ -84,7 +85,9 @@ def indexing_main(input: str,
     # write the stats into the stats file
     write_documents_stats(stats)
     # write the result to output file
+    logging.info(f"Started writing the index to output: {output}")
     write_index_to_binary_file(output, index)
+    logging.info(f"done writing the index.")
     # update LATEST.txt file 
     write_version_to_latest(output_base, version)
     # delete the document files
@@ -98,9 +101,10 @@ def delete_documents(paths: list[str]):
 
 # This will be called from outside to add more documents
 def add_new_documents(documents: list[dict]) -> None:
+    logging.info(f"Started adding new documents of count {len(documents)} to the index.")
     for document in documents:
         add_new_document(document)
-
+    logging.info(f"Done adding new documents to the index.")
 
 def add_new_document(document: dict) -> None:
     preprocessed_document = preprocess_document(document)
@@ -139,7 +143,9 @@ def load_latest_index_file_if_exists(output_base_dir: str, index_filename: str, 
     latest_stats_filepath = Path(output_base_dir) / version / stats_filename
     global index
     index = read_index_from_binary_file(latest_index_filepath)
+    logging.log("Reading the latest index..")
     read_stats_file(latest_stats_filepath)
+    logging.log(f"Done reading the latest index, size {os.path.getsize(latest_index_filepath)}")
 
 def get_latest_documents(input_file_directory:str) -> tuple[list[dict], list[str]]: 
     documents: list[dict] = []
