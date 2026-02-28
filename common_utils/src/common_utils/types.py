@@ -1,10 +1,51 @@
+<<<<<<< HEAD
+=======
+from __future__ import annotations
+
+>>>>>>> 7aab3a8 (Implement binary queries against wrapped InvertedIndex.)
 from dataclasses import dataclass
 from typing import TypeAlias
+
+from .ir_serializer import query_index_from_binary_file
 
 DocID: TypeAlias = int
 Position: TypeAlias = int
 Token: TypeAlias = str
 Posting: TypeAlias = dict[DocID, set[Position]]
+<<<<<<< HEAD
+=======
+
+
+class InvertedIndex(dict[Token, Posting]):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._binary_path = None
+
+    @classmethod
+    def from_binary_file(cls, binary_path: str) -> InvertedIndex:
+        instance = cls()
+        instance._binary_path = binary_path
+        return instance
+
+    def __getitem__(self, key: str) -> Posting:
+        if self._binary_path:
+            return query_index_from_binary_file(self._binary_path, key)
+        return super().__getitem__(key)
+
+    def __contains__(self, key: object) -> bool:
+        if self._binary_path:
+            if type(key) is str:
+                result = query_index_from_binary_file(self._binary_path, key)
+                return bool(result)
+            else:
+                return False
+        return super().__contains__(key)
+
+    def __iter__(self):
+        if self._binary_path:
+            raise NotImplementedError("Binary InvertedIndex does not support iteration")
+        return super().__iter__()
+>>>>>>> 7aab3a8 (Implement binary queries against wrapped InvertedIndex.)
 
 
 @dataclass

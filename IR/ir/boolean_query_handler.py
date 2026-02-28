@@ -3,7 +3,7 @@ from typing import Callable, Final, Iterable, Optional
 
 from common_utils.src.common_utils.index import InvertedIndex
 from common_utils.src.common_utils.preprocessor import preprocess_line
-from common_utils.src.common_utils.types import DocID, DocumentsStat
+from common_utils.src.common_utils.types import DocID, DocumentsStat, InvertedIndex
 from indexer.indexer import docs_stats
 from IR.ir.query_handler import QueryHandler
 
@@ -53,9 +53,6 @@ def boolean_operator_search(
     Returns:
         A set of document ids that match the search.
     """
-
-    print("ran boolean_operator_search")
-
     query1_doc_ids = boolean_search(query1, inverted_index, docs_stat)
     query2_doc_ids = boolean_search(query2, inverted_index, docs_stat)
 
@@ -142,8 +139,6 @@ def proximity_search(
         A set of document ids that match the search.
     """
     common_docs = boolean_operator_search(term1, "AND", term2, inverted_index, docs_stats)
-
-    print("common_docs", common_docs)
 
     preprocessed_term1, *_ = preprocess_line(term1)
     preprocessed_term2, *_ = preprocess_line(term2)
