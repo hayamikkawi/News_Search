@@ -21,24 +21,25 @@ def read_str(data: bytes | mmap.mmap, offset: int) -> Tuple[str, int]:
     return token, offset + token_len
 
 
+def decode_vbytes(vbytes, offset: int = 0, byte_no=0) -> Tuple[int, int]:
+    byte = vbytes[offset]
+    num = (byte & 0b1111111) << (7 * byte_no)
+
+    if byte & 0b10000000:
+        return num, 1
+
+    rest_num, n_bytes_read = decode_vbytes(vbytes, offset + 1, byte_no + 1)
+
+    return num | rest_num, 1 + n_bytes_read
+
+
 def read_var_int(data: bytes | mmap.mmap, offset: int) -> Tuple[int, int]:
-    def decode_vbytes(vbytes, offset: int = 0, byte_no=0) -> Tuple[int, int]:
-        byte = vbytes[offset]
-        num = (byte & 0b1111111) << (7 * byte_no)
-
-        if byte & 0b10000000:
-            return num, 1
-
-        rest_num, n_bytes_read = decode_vbytes(vbytes, offset + 1, byte_no + 1)
-
-        return num | rest_num, 1 + n_bytes_read
-
     value, bytes_read = decode_vbytes(data, offset)
     return value, offset + bytes_read
 
 
 def read_index_from_binary_file(index_path: str) -> InvertedIndex:
-    index = {}
+    index = InvertedIndex({})
 
     # Need to open with '+' otherwise permission denied
     with open(index_path, "rb+") as index_file:
@@ -73,6 +74,7 @@ def read_posting(data: mmap.mmap | bytes, offset: int) -> Tuple[Posting, int]:
         n_positions, head = read_int(data, head)
 
         last_position = 0
+
         for _ in range(n_positions):
             delta, head = read_var_int(data, head)
 
@@ -155,37 +157,3 @@ def write_index_to_binary_file(index_file: str, index: InvertedIndex) -> None:
         head = write_fixed_int(n_tokens, index_output_file, head)
         for token_offset in token_offsets:
             head = write_fixed_int(token_offset, index_output_file, head)
-
-
-def query_index_from_binary_file(index_path: str, token: str) -> Posting:
-    posting = dict()
-
-    with open(index_path, "rb+") as index_file:
-        with mmap.mmap(index_file.fileno(), 0) as mm:
-            head = 0
-
-            n_tokens, table_start = read_int(mm, 0)
-
-            def binary_search(left: int, right: int, head: int) -> int | None:
-                if left > right:
-                    return None
-
-                mid = (left + right) // 2
-                token_offset, head = read_int(mm, table_start + (mid * WORD_SIZE))
-                curr_token, head = read_str(mm, token_offset)
-
-                if curr_token == token:
-                    return head
-                if curr_token < token:
-                    return binary_search(mid + 1, right, head)
-                else:
-                    return binary_search(left, mid - 1, head)
-
-            posting_offset = binary_search(0, n_tokens - 1, head)
-
-            if posting_offset is None:
-                return posting
-
-            posting, head = read_posting(mm, posting_offset)
-
-    return posting
