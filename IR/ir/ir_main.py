@@ -6,7 +6,6 @@ from typing import Iterable, Optional
 import line_profiler
 
 from common_utils.src.common_utils.index import InvertedIndex
-from common_utils.src.common_utils.serializer import read_index_from_binary_file
 from common_utils.src.common_utils.types import DocID, DocumentsStat
 from IR.ir.boolean_query_handler import BooleanQueryHandler
 from IR.ir.free_text_query_handler import FreeTextQueryHandler

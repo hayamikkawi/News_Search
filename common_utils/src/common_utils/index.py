@@ -20,13 +20,21 @@ class InvertedIndex(dict[Token, Posting]):
 
     def __getitem__(self, key: str) -> Posting:
         if self._index_mmap:
-            return query_mmapped_index(self._index_mmap, key)
+            if super().__contains__(key):
+                return super().__getitem__(key)
+            else:
+                result = query_mmapped_index(self._index_mmap, key)
+                super().__setitem__(key, result)
+                return result
         return super().__getitem__(key)
 
     def __contains__(self, key: object) -> bool:
         if self._index_mmap:
-            if type(key) is str:
+            if super().__contains__(key):
+                return super().__contains__(key)
+            elif type(key) is str:
                 result = query_mmapped_index(self._index_mmap, key)
+                super().__setitem__(key, result)
                 return bool(result)
             else:
                 return False
