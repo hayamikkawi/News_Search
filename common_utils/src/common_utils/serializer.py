@@ -3,7 +3,8 @@ import struct
 from io import BufferedWriter
 from typing import Final, Tuple
 
-from .types import InvertedIndex, Posting
+from .index import InvertedIndex
+from .types import Posting
 
 STRUCT_FMT = "@I"
 WORD_SIZE: Final = struct.calcsize(STRUCT_FMT)

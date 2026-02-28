@@ -3,7 +3,11 @@ import logging
 from enum import Enum
 from typing import Iterable, Optional
 
-from common_utils.src.common_utils.types import DocID, DocumentsStat, InvertedIndex
+import line_profiler
+
+from common_utils.src.common_utils.index import InvertedIndex
+from common_utils.src.common_utils.serializer import read_index_from_binary_file
+from common_utils.src.common_utils.types import DocID, DocumentsStat
 from IR.ir.boolean_query_handler import BooleanQueryHandler
 from IR.ir.free_text_query_handler import FreeTextQueryHandler
 from IR.ir.query_handler import QueryHandler
@@ -42,6 +46,7 @@ class IRMain:
                 handler = FreeTextQueryHandler()
         return handler
 
+    @line_profiler.profile
     def handle_query(
         self, query: str, query_type: QueryType, candidate_ids: Optional[Iterable[DocID]] = None
     ) -> list[DocID]:
