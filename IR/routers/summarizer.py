@@ -12,12 +12,10 @@ from pydantic import BaseModel
 router = APIRouter()
 
 class SummarizeRequest(BaseModel):
-    query: str
-    ids: list[int]
-    k: int = 5
+    ids: list[DocID]
+    k: int = 3
 # load once (slow to load, keep global)
 summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
-# summarizer = pipeline("summarization", model="t5-small")
 tokenizer = summarizer.tokenizer
 
 def extract_text_basic(html: str) -> str:
@@ -75,33 +73,6 @@ async def summarize(request: Request, body: SummarizeRequest):
     final_summary = await asyncio.to_thread(lambda: summarize_text(combined))
     logging.info(f"final_summary: {final_summary}")
     return {"summary": final_summary, "sources": used_ids}
-
-# def summarize_long_text(text: str) -> str:
-#     max_chunk = 900  # safe margin under 1024 tokens
-
-#     # split by characters (simple + works fine)
-#     chunks = [text[i:i+3000] for i in range(0, len(text), 3000)]
-
-#     summaries = []
-#     for chunk in chunks:
-#         out = summarizer(
-#             chunk,
-#             max_length=140,
-#             min_length=60,
-#             do_sample=False,
-#         )
-#         summaries.append(out[0]["summary_text"])
-
-#     # final summary of summaries
-#     combined = " ".join(summaries)
-#     final = summarizer(
-#         combined,
-#         max_length=140,
-#         min_length=60,
-#         do_sample=False,
-#     )
-
-#     return final[0]["summary_text"]
 
 def summarize_long_text(text: str) -> str:
     max_tokens = 900 
