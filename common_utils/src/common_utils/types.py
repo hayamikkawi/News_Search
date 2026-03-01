@@ -1,15 +1,19 @@
+from dataclasses import dataclass
 from typing import TypeAlias
 
 DocID: TypeAlias = int
 Position: TypeAlias = int
+Token: TypeAlias = str
 Posting: TypeAlias = dict[DocID, set[Position]]
-InvertedIndex: TypeAlias = dict[str, dict[int, set[int]]]
-from dataclasses import dataclass
 
 
 @dataclass
 class DocumentsStat:
     document_len_map: dict[int, int]
+
+    @property
+    def all_doc_ids(self) -> set[DocID]:
+        return set(self.document_len_map.keys())
 
     @property
     def documents_count(self) -> int:

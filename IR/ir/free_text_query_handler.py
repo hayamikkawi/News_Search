@@ -1,11 +1,11 @@
-import logging
 import math
 from collections import defaultdict
 from typing import Iterable, Optional
 
-from common_utils.types import DocumentsStat, DocID, InvertedIndex
+from common_utils.src.common_utils.index import InvertedIndex
+from common_utils.src.common_utils.preprocessor import preprocess_line
+from common_utils.src.common_utils.types import DocID, DocumentsStat
 from IR.ir.query_handler import QueryHandler
-from common_utils.preprocessor import preprocess_line
 
 
 class FreeTextQueryHandler(QueryHandler):
@@ -18,7 +18,7 @@ class FreeTextQueryHandler(QueryHandler):
         N: int,
         k1: float = 1.5,
         b: float = 0.75,
-        candidate_ids: Optional[Iterable[DocID]] = None
+        candidate_ids: Optional[Iterable[DocID]] = None,
     ) -> list[tuple[DocID, float]]:
         scores: defaultdict[DocID, float] = defaultdict(float)
         candidate_ids_set = None
@@ -31,7 +31,7 @@ class FreeTextQueryHandler(QueryHandler):
             idf = math.log(1 + (N - df + 0.5) / (df + 0.5))
             # logging.info(f"index[{token}]: {index[token]}.")
             for doc_id, positions in index[token].items():
-                if candidate_ids_set is not None and doc_id not in candidate_ids_set: 
+                if candidate_ids_set is not None and doc_id not in candidate_ids_set:
                     continue
                 tf = len(positions)
                 # logging.info(f"tf: {tf}.")
@@ -43,10 +43,11 @@ class FreeTextQueryHandler(QueryHandler):
         return sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
     def handle_query(
-        self, query: str,
+        self,
+        query: str,
         index: InvertedIndex,
-        documents_stat: DocumentsStat, 
-        candidate_ids: Optional[Iterable[DocID]] = None
+        documents_stat: DocumentsStat,
+        candidate_ids: Optional[Iterable[DocID]] = None,
     ) -> list[DocID]:
         # preprocess the query into tokens
         query_tokens: list[str] = preprocess_line(query)

@@ -1,9 +1,11 @@
 import re
 from typing import Callable, Final, Iterable, Optional
 
-from common_utils.types import DocumentsStat, DocID, InvertedIndex
+from common_utils.src.common_utils.index import InvertedIndex
+from common_utils.src.common_utils.preprocessor import preprocess_line
+from common_utils.src.common_utils.types import DocID, DocumentsStat
+from indexer.indexer import docs_stats
 from IR.ir.query_handler import QueryHandler
-from common_utils.preprocessor import preprocess_line
 
 BOOLEANS_RE: Final = re.compile(r"(.*?) (AND NOT|OR NOT|AND|OR|NOT) (.*)")
 PHRASE_RE: Final = re.compile(r"\"(.*) (.*)\"")
@@ -12,34 +14,32 @@ PROXIMITY_RE: Final = re.compile(r"#(\d+)\((.*), (.*)\)")
 
 class BooleanQueryHandler(QueryHandler):
     def handle_query(
-        self, query: str,
+        self,
+        query: str,
         index: InvertedIndex,
-        documents_stat: DocumentsStat, 
-        candidate_ids: Optional[Iterable[DocID]] = None
+        documents_stat: DocumentsStat,
+        candidate_ids: Optional[Iterable[DocID]] = None,
     ) -> list[DocID]:
-        return list(boolean_search(query, index))
+        return list(boolean_search(query, index, documents_stat))
 
 
-def all_doc_ids(inverted_index: InvertedIndex) -> set[DocID]:
-    """Fetch all the document ids in the inverted index.
+# def all_doc_ids(inverted_index: InvertedIndex) -> set[DocID]:
+#     """Fetch all the document ids in the inverted index.
 
-    Args:
-        inverted_index: The inverted index to fetch document ids from.
+#     Args:
+#         inverted_index: The inverted index to fetch document ids from.
 
-    Returns:
-        A set of document ids.
-    """
-    docs: set[int] = set()
-    for docs_to_positions in inverted_index.values():
-        docs.update(docs_to_positions.keys())
-    return docs
+#     Returns:
+#         A set of document ids.
+#     """
+#     docs: set[int] = set()
+#     for docs_to_positions in inverted_index.values():
+#         docs.update(docs_to_positions.keys())
+#     return docs
 
 
 def boolean_operator_search(
-    query1: str,
-    operator: str,
-    query2: str,
-    inverted_index: InvertedIndex,
+    query1: str, operator: str, query2: str, inverted_index: InvertedIndex, docs_stat: DocumentsStat
 ) -> set[DocID]:
     """
     Perform a boolean search on the given queries using the specified operator.
@@ -53,8 +53,8 @@ def boolean_operator_search(
     Returns:
         A set of document ids that match the search.
     """
-    query1_doc_ids = boolean_search(query1, inverted_index)
-    query2_doc_ids = boolean_search(query2, inverted_index)
+    query1_doc_ids = boolean_search(query1, inverted_index, docs_stat)
+    query2_doc_ids = boolean_search(query2, inverted_index, docs_stat)
 
     match operator:
         case "OR":
@@ -64,14 +64,14 @@ def boolean_operator_search(
         case "AND NOT":
             return query1_doc_ids - query2_doc_ids
         case "OR NOT":
-            return all_doc_ids(inverted_index) - query2_doc_ids
+            return docs_stat.all_doc_ids - query2_doc_ids
         case "NOT":
             raise ValueError("The boolean operator NOT cannot be used alone")
         case _:
             raise ValueError("Invalid boolean operator")
 
 
-def boolean_search(query: str, inverted_index: InvertedIndex) -> set[DocID]:
+def boolean_search(query: str, inverted_index: InvertedIndex, docs_stat: DocumentsStat) -> set[DocID]:
     """
     Searches for documents that match a boolean query.
 
@@ -86,7 +86,7 @@ def boolean_search(query: str, inverted_index: InvertedIndex) -> set[DocID]:
     if match := re.search(BOOLEANS_RE, query):
         query1, operator, query2 = match.group(1), match.group(2), match.group(3)
 
-        return boolean_operator_search(query1, operator, query2, inverted_index)
+        return boolean_operator_search(query1, operator, query2, inverted_index, docs_stat)
     if match := re.search(PHRASE_RE, query):
         query1, query2 = match.group(1), match.group(2)
 
@@ -138,7 +138,7 @@ def proximity_search(
     Returns:
         A set of document ids that match the search.
     """
-    common_docs = boolean_operator_search(term1, "AND", term2, inverted_index)
+    common_docs = boolean_operator_search(term1, "AND", term2, inverted_index, docs_stats)
 
     preprocessed_term1, *_ = preprocess_line(term1)
     preprocessed_term2, *_ = preprocess_line(term2)
