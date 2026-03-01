@@ -99,7 +99,6 @@ class DocStore:
         cur = self.cursor()
         cur.execute(sql, params)
         rows = cur.fetchall()
-        logging.info("rows example:", rows[:5], "type:", type(rows[0]) if rows else None)
         ids = {row["id"] for row in rows}
         cur.close()
         return ids
