@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from .types import Posting, Token
 
 
-def read_offset_table(index_mmap: mmap.mmap) -> dict[Token, int]:
+def read_offset_table(index_mmap: mmap.mmap) -> dict["Token", int]:
     from .serializer import read_int, read_str
 
     head = 0
@@ -20,7 +20,7 @@ def read_offset_table(index_mmap: mmap.mmap) -> dict[Token, int]:
     return offset_table
 
 
-def query_mmapped_index(index_mmap: mmap.mmap, token: str) -> Posting:
+def query_mmapped_index(index_mmap: mmap.mmap, token: str) -> "Posting":
     from .serializer import WORD_SIZE, read_int, read_posting, read_str
 
     posting = dict()
