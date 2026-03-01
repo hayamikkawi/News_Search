@@ -7,9 +7,14 @@ import httpx
 from bs4 import BeautifulSoup
 from fastapi import APIRouter, HTTPException, Request
 from transformers import pipeline
+from pydantic import BaseModel
 
 router = APIRouter()
 
+class SummarizeRequest(BaseModel):
+    query: str
+    ids: list[int]
+    k: int = 5
 # load once (slow to load, keep global)
 summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 
@@ -32,7 +37,9 @@ def summarize_text(text: str) -> str:
     return out[0]["summary_text"]
 
 @router.post("/summarize")
-async def summarize(request: Request, query: str, ids: list[str], k: int = 5):
+async def summarize(request: Request, body: SummarizeRequest):
+    ids = body.ids
+    k = body.k
     # 1) get top k elements
     first_k_ids = ids[:k]
     logging.info(f"ids: {first_k_ids}")
