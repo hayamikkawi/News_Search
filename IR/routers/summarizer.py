@@ -17,6 +17,7 @@ class SummarizeRequest(BaseModel):
     k: int = 5
 # load once (slow to load, keep global)
 summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+tokenizer = summarizer.tokenizer
 
 def extract_text_basic(html: str) -> str:
     soup = BeautifulSoup(html, "html.parser")
@@ -66,10 +67,73 @@ async def summarize(request: Request, body: SummarizeRequest):
 
     # 5) summarize each, then summarize the summaries (two-stage)
     per_article_summaries = await asyncio.to_thread(
-        lambda: [summarize_text(t) for t in texts]
+        lambda: [summarize_long_text(t) for t in texts]
     )
     combined = "\n".join(per_article_summaries)
     logging.info(f"combined: {combined}")
     final_summary = await asyncio.to_thread(lambda: summarize_text(combined))
     logging.info(f"final_summary: {final_summary}")
     return {"summary": final_summary, "sources": used_ids}
+
+# def summarize_long_text(text: str) -> str:
+#     max_chunk = 900  # safe margin under 1024 tokens
+
+#     # split by characters (simple + works fine)
+#     chunks = [text[i:i+3000] for i in range(0, len(text), 3000)]
+
+#     summaries = []
+#     for chunk in chunks:
+#         out = summarizer(
+#             chunk,
+#             max_length=140,
+#             min_length=60,
+#             do_sample=False,
+#         )
+#         summaries.append(out[0]["summary_text"])
+
+#     # final summary of summaries
+#     combined = " ".join(summaries)
+#     final = summarizer(
+#         combined,
+#         max_length=140,
+#         min_length=60,
+#         do_sample=False,
+#     )
+
+#     return final[0]["summary_text"]
+
+def summarize_long_text(text: str) -> str:
+    max_tokens = 900 
+
+    # tokenize once
+    tokens = tokenizer.encode(text, truncation=False)
+
+    # split tokens into chunks
+    chunks = [
+        tokens[i:i+max_tokens]
+        for i in range(0, len(tokens), max_tokens)
+    ]
+
+    summaries = []
+
+    for chunk in chunks:
+        chunk_text = tokenizer.decode(chunk, skip_special_tokens=True)
+
+        out = summarizer(
+            chunk_text,
+            max_length=140,
+            min_length=60,
+            do_sample=False,
+        )
+        summaries.append(out[0]["summary_text"])
+
+    combined = " ".join(summaries)
+
+    final = summarizer(
+        combined,
+        max_length=140,
+        min_length=60,
+        do_sample=False,
+    )
+
+    return final[0]["summary_text"]
