@@ -20,7 +20,12 @@ class BooleanQueryHandler(QueryHandler):
         documents_stat: DocumentsStat,
         candidate_ids: Optional[Iterable[DocID]] = None,
     ) -> list[DocID]:
-        return list(boolean_search(query, index, documents_stat))
+        search_result: set[DocID] = boolean_search(query, index, documents_stat)
+        if candidate_ids is None:
+            return list(search_result)
+        candidate_ids_set = set(candidate_ids)
+        mutual_result = search_result.intersection(candidate_ids_set)
+        return list(mutual_result)
 
 
 # def all_doc_ids(inverted_index: InvertedIndex) -> set[DocID]:
