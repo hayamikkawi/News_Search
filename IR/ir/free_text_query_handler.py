@@ -2,9 +2,9 @@ import math
 from collections import defaultdict
 from typing import Iterable, Optional
 
-from common_utils.src.common_utils.index import InvertedIndex
-from common_utils.src.common_utils.preprocessor import preprocess_line
-from common_utils.src.common_utils.types import DocID, DocumentsStat
+from common_utils.index import InvertedIndex
+from common_utils.preprocessor import preprocess_line
+from common_utils.types import DocID, DocumentsStat
 from IR.ir.query_handler import QueryHandler
 
 
