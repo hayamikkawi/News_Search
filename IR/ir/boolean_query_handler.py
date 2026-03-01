@@ -98,14 +98,14 @@ def boolean_search(query: str, inverted_index: InvertedIndex, docs_stat: Documen
         def phrase_proximity(pos1: int, pos2: int) -> bool:
             return pos2 - pos1 == 1
 
-        return proximity_search(query1, query2, inverted_index, phrase_proximity)
+        return proximity_search(query1, query2, inverted_index, phrase_proximity, docs_stat)
     if match := re.search(PROXIMITY_RE, query):
         proximity, query1, query2 = match.group(1), match.group(2), match.group(3)
 
         def arbitrary_proximity(pos1: int, pos2: int) -> bool:
             return abs(pos2 - pos1) <= int(proximity)
 
-        return proximity_search(query1, query2, inverted_index, arbitrary_proximity)
+        return proximity_search(query1, query2, inverted_index, arbitrary_proximity, docs_stat)
 
     return term_search(query, inverted_index)
 
@@ -130,6 +130,7 @@ def proximity_search(
     term2: str,
     inverted_index: InvertedIndex,
     proximity_function: Callable[[int, int], bool],
+    docs_stats: DocumentsStat
 ) -> set[DocID]:
     """
     Searches for documents containing two terms within a certain proximity.
