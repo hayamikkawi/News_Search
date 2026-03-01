@@ -3,8 +3,8 @@ import logging
 from enum import Enum
 from typing import Iterable, Optional
 
-from common_utils.src.common_utils.index import InvertedIndex
-from common_utils.src.common_utils.types import DocID, DocumentsStat
+from common_utils.index import InvertedIndex
+from common_utils.types import DocID, DocumentsStat
 from IR.ir.boolean_query_handler import BooleanQueryHandler
 from IR.ir.free_text_query_handler import FreeTextQueryHandler
 from IR.ir.query_handler import QueryHandler
