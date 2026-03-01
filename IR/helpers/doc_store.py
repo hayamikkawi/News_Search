@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Dict, List, Optional
+from common_utils.types import DocID
 import mysql.connector
 import os
 from datetime import datetime
@@ -36,7 +37,7 @@ class DocStore:
         self._ensure_conn()
         return self._conn.cursor(dictionary=True)
 
-    def fetch_docs_by_ids(self, ids: List[str]) -> List[Dict[str, Any]]:
+    def fetch_docs_by_ids(self, ids: List[DocID]) -> List[Dict[str, Any]]:
         if not ids:
             return []
         placeholders = ",".join(["%s"] * len(ids))
