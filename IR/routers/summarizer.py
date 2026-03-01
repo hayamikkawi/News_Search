@@ -16,7 +16,8 @@ class SummarizeRequest(BaseModel):
     ids: list[int]
     k: int = 5
 # load once (slow to load, keep global)
-summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+# summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+summarizer = pipeline("summarization", model="t5-small")
 tokenizer = summarizer.tokenizer
 
 def extract_text_basic(html: str) -> str:
@@ -113,6 +114,7 @@ def summarize_long_text(text: str) -> str:
         tokens[i:i+max_tokens]
         for i in range(0, len(tokens), max_tokens)
     ]
+    # chunks = chunks[:2]
 
     summaries = []
 
