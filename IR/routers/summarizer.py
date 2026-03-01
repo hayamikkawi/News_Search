@@ -75,7 +75,7 @@ async def summarize(request: Request, body: SummarizeRequest):
     return {"summary": final_summary, "sources": used_ids}
 
 def summarize_long_text(text: str) -> str:
-    max_tokens = 900 
+    max_tokens = 200 
 
     # tokenize once
     tokens = tokenizer.encode(text, truncation=False)
@@ -86,7 +86,7 @@ def summarize_long_text(text: str) -> str:
         for i in range(0, len(tokens), max_tokens)
     ]
     logging.info(f"text has {len(chunks)} chunks")
-    chunks = chunks[:3]
+    chunks = chunks[:2]
 
     summaries = []
 
@@ -95,8 +95,8 @@ def summarize_long_text(text: str) -> str:
 
         out = summarizer(
             chunk_text,
-            max_length=140,
-            min_length=60,
+            max_length=80,
+            min_length=20,
             do_sample=False,
         )
         summaries.append(out[0]["summary_text"])
