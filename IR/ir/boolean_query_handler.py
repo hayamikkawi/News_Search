@@ -3,7 +3,7 @@ from typing import Callable, Final, Iterable, Optional
 
 from common_utils.src.common_utils.index import InvertedIndex
 from common_utils.src.common_utils.preprocessor import preprocess_line
-from common_utils.src.common_utils.types import DocID, DocumentsStat, InvertedIndex
+from common_utils.src.common_utils.types import DocID, DocumentsStat
 from indexer.indexer import docs_stats
 from IR.ir.query_handler import QueryHandler
 

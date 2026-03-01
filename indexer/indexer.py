@@ -13,7 +13,7 @@ from common_utils.src.common_utils.serializer import (
     read_index_from_binary_file,
     write_index_to_binary_file,
 )
-from common_utils.src.common_utils.types import DocumentsStat, InvertedIndex
+from common_utils.src.common_utils.types import DocumentsStat
 
 # CONSTANTS
 ID_KEY: Final = "id"
