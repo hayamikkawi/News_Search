@@ -102,3 +102,20 @@ class DocStore:
         ids = {row["id"] for row in rows}
         cur.close()
         return ids
+    
+    def fetch_urls_by_ids(self, ids: List[str]) -> List[str]:
+        if not ids:
+            return []
+        placeholders = ",".join(["%s"] * len(ids))
+        sql = f"""
+            SELECT id,
+              COALESCE(final_url, url) AS url
+            FROM articles
+            WHERE id IN ({placeholders})
+        """
+        cur = self.cursor()
+        cur.execute(sql, ids)
+        rows = cur.fetchall()
+        id_to_url = {int(doc_id): url for doc_id, url in rows}
+        cur.close()
+        return [id_to_url.get(int(i)) for i in ids]
