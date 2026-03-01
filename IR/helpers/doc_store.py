@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Dict, List, Optional
+from common_utils.types import DocID
 import mysql.connector
 import os
 from datetime import datetime
@@ -36,7 +37,7 @@ class DocStore:
         self._ensure_conn()
         return self._conn.cursor(dictionary=True)
 
-    def fetch_docs_by_ids(self, ids: List[str]) -> List[Dict[str, Any]]:
+    def fetch_docs_by_ids(self, ids: List[DocID]) -> List[Dict[str, Any]]:
         if not ids:
             return []
         placeholders = ",".join(["%s"] * len(ids))
@@ -98,7 +99,24 @@ class DocStore:
         cur = self.cursor()
         cur.execute(sql, params)
         rows = cur.fetchall()
-        logging.info("rows example:", rows[:5], "type:", type(rows[0]) if rows else None)
         ids = {row["id"] for row in rows}
         cur.close()
         return ids
+    
+    def fetch_urls_by_ids(self, ids: List[str]) -> List[str]:
+        if not ids:
+            return []
+        placeholders = ",".join(["%s"] * len(ids))
+        sql = f"""
+            SELECT id,
+              COALESCE(final_url, url) AS url
+            FROM articles
+            WHERE id IN ({placeholders})
+        """
+        cur = self.cursor()
+        cur.execute(sql, ids)
+        rows = cur.fetchall()
+        # logging.info(f"rows: {rows}")
+        id_to_url = {int(r["id"]): r["url"] for r in rows}        
+        cur.close()
+        return [id_to_url.get(i) for i in ids]
