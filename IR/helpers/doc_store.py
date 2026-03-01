@@ -116,7 +116,7 @@ class DocStore:
         cur = self.cursor()
         cur.execute(sql, ids)
         rows = cur.fetchall()
-        logging.info(f"rows: {rows}")
-        id_to_url = {int(doc_id): url for doc_id, url in rows}
+        # logging.info(f"rows: {rows}")
+        id_to_url = {int(r["id"]): r["url"] for r in rows}        
         cur.close()
-        return [id_to_url.get(int(i)) for i in ids]
+        return [id_to_url.get(i) for i in ids]
