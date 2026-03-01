@@ -13,7 +13,7 @@ from common_utils.types import DocID
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from routers.summarizer import router as summarize_router
+from IR.routers.summarizer import router as summarize_router
 
 logger = logging.getLogger("search")
 logging.basicConfig(level=logging.INFO)
