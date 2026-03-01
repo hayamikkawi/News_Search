@@ -1,7 +1,7 @@
 from typing import Iterable, Optional, Protocol
 
-from common_utils.src.common_utils.index import InvertedIndex
-from common_utils.src.common_utils.types import DocID, DocumentsStat
+from common_utils.index import InvertedIndex
+from common_utils.types import DocID, DocumentsStat
 
 
 # serves as a protocol (interface)
