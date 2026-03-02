@@ -96,17 +96,13 @@ Reset
 </div>
 </div>
 </div>
-<div class="flex flex-wrap justify-center gap-3 text-sm text-slate-400">
-<span>Recommended Keywords:</span>
-<a class="hover:text-white transition-colors underline decoration-slate-600" href="#">Space Exploration 2.0</a>
-<a class="hover:text-white transition-colors underline decoration-slate-600" href="#">2026 Winter Games</a>
-</div>
+
 </div>
 </section>
 <!-- Content Grid -->
 <div class="grid grid-cols-12 gap-8">
 <!-- Left Sidebar: Filters -->
-<aside class="col-span-12 lg:col-span-3 space-y-6 sticky top-10">
+<aside class="col-span-12 lg:col-span-3 space-y-6">
 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
 <div class="flex items-center justify-between mb-6">
 <h3 class="font-bold text-slate-900">Refined Filters</h3>
@@ -115,56 +111,12 @@ Reset
 <div class="space-y-6">
 <!-- Date Filter -->
 <div class="space-y-3">
-<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Publish Date (2026)</label>
+<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Publish Date</label>
 <div class="grid grid-cols-2 gap-2" id="date-filter">
-<button class="date-filter-btn px-3 py-2 text-xs bg-indigo-50 text-indigo-700 font-semibold rounded-xl border border-indigo-100 hover:border-indigo-300 active" data-value="24h">Last 24 Hours</button>
+<button class="date-filter-btn px-3 py-2 text-xs bg-white text-slate-600 font-semibold rounded-xl border border-slate-200 hover:border-slate-300" data-value="24h">Last 24h</button>
 <button class="date-filter-btn px-3 py-2 text-xs bg-white text-slate-600 font-semibold rounded-xl border border-slate-200 hover:border-slate-300" data-value="week">Last Week</button>
 <button class="date-filter-btn px-3 py-2 text-xs bg-white text-slate-600 font-semibold rounded-xl border border-slate-200 hover:border-slate-300" data-value="month">Last Month</button>
-<button class="date-filter-btn px-3 py-2 text-xs bg-white text-slate-600 font-semibold rounded-xl border border-slate-200 hover:border-slate-300" data-value="custom">Custom</button>
-</div>
-</div>
-<!-- Content Type -->
-<div class="space-y-3">
-<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Content Type</label>
-<div class="space-y-2">
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500" checked/>
-<span class="text-sm text-slate-700 font-medium">In-Depth Analysis</span>
-</label>
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">Breaking News</span>
-</label>
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">Data Report</span>
-</label>
-</div>
-</div>
-<!-- Location Filter -->
-<div class="space-y-3">
-<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Geographic Region</label>
-<div class="space-y-2">
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">North America</span>
-</label>
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">Europe</span>
-</label>
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">Asia-Pacific</span>
-</label>
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">Middle East & Africa</span>
-</label>
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">Latin America</span>
-</label>
+<button class="date-filter-btn px-3 py-2 text-xs bg-indigo-50 text-indigo-700 font-semibold rounded-xl border border-indigo-100 hover:border-indigo-300 active" data-value="all">All Time</button>
 </div>
 </div>
 </div>
@@ -180,26 +132,25 @@ Apply Filters
 
 <!-- Search results container - populated by JavaScript -->
 <div class="grid gap-6" id="search-results-container">
-<!-- Welcome message - shown before first search -->
-<div class="text-center py-16 px-6">
-<div class="mb-6">
-<span class="iconify text-6xl text-indigo-400" data-icon="heroicons:magnifying-glass"></span>
+<!-- Live news loading placeholder -->
+<div class="col-span-full flex flex-col items-center justify-center py-20">
+  <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600 mb-4"></div>
+  <p class="text-slate-500 text-sm">Loading latest news…</p>
 </div>
-<h2 class="text-2xl font-bold text-slate-800 mb-3">Start Your Search</h2>
-<p class="text-slate-500 max-w-md mx-auto">
-Enter keywords above to search through our collection of news articles. Use free text search or build complex boolean queries.
-</p>
 </div>
+
+<!-- Pagination -->
+<div id="pagination-container" class="hidden flex items-center justify-center gap-2 pt-4 pb-2 flex-wrap">
 </div>
 </main>
 <!-- Right Sidebar: Live Pulse -->
-<aside class="col-span-12 lg:col-span-3 space-y-6 sticky top-10">
+<aside class="col-span-12 lg:col-span-3 space-y-6">
 <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
 <div class="bg-slate-50 p-4 border-b border-slate-200 flex items-center space-x-2">
 <div class="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
 <h3 class="font-bold text-slate-900 text-sm">Live Breaking News</h3>
 </div>
-<div class="h-[500px] overflow-y-auto hide-scrollbar p-2">
+<div class="p-2">
 <div id="latest-news-panel" class="space-y-4">
 <!-- Latest news will be loaded dynamically -->
 <div class="text-center py-8 text-slate-400 text-sm">
@@ -208,19 +159,10 @@ Loading latest news...
 </div>
 </div>
 <div class="p-4 bg-white border-t border-slate-100 text-center">
-<button class="text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">View Archive History →</button>
+<a href="LatestNews.html" class="text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">View All Latest News →</a>
 </div>
 </div>
-<div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-<h3 class="font-bold text-slate-900 mb-4">Core Topics</h3>
-<div class="flex flex-wrap gap-2">
-<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># Renewable Energy</span>
-<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># 2026 Carbon Neutral</span>
-<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># Superconductor Tech</span>
-<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># Grid Modernization</span>
-<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># Climate Diplomacy</span>
-</div>
-</div>
+
 </aside>
 </div>
 </main>

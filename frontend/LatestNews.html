@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Live News — GlobalSearch</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .article-card { animation: fadeInUp 0.35s ease both; }
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans">
+
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 flex items-center justify-between">
+  <div class="flex items-center space-x-3">
+    <a href="GlobalSearch.html" class="flex items-center space-x-2 text-slate-400 hover:text-indigo-600 transition-colors">
+      <span class="iconify w-5 h-5" data-icon="heroicons:arrow-left"></span>
+      <span class="text-sm font-semibold">Back</span>
+    </a>
+    <div class="w-px h-5 bg-slate-200"></div>
+    <div class="flex items-center space-x-2">
+      <div class="w-8 h-8 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-white shadow">
+        <span class="iconify w-4 h-4" data-icon="heroicons:globe-alt-20-solid"></span>
+      </div>
+      <span class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">GlobalSearch</span>
+    </div>
+  </div>
+  <div class="flex items-center space-x-2">
+    <div class="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
+    <span class="text-sm font-bold text-slate-700">Live Breaking News</span>
+    <span id="article-count-badge" class="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full hidden"></span>
+  </div>
+</header>
+
+<!-- Hero Banner -->
+<div class="bg-gradient-to-br from-slate-900 to-indigo-950 px-6 py-10 text-center">
+  <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-2">Real-Time News Stream</h1>
+  <p class="text-indigo-300 text-sm">Latest articles from across the web · Auto-refreshes every 5 minutes</p>
+  <div class="mt-4 flex items-center justify-center gap-2 text-xs text-white/50">
+    <span class="iconify w-4 h-4" data-icon="heroicons:clock"></span>
+    <span id="last-refresh-label">Loading…</span>
+  </div>
+</div>
+
+<!-- Main Content -->
+<main class="max-w-4xl mx-auto px-4 py-8">
+
+  <!-- Filter Bar -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex gap-2">
+      <button id="sort-newest" class="sort-btn px-4 py-1.5 text-xs font-bold rounded-full bg-indigo-600 text-white transition-colors">Newest First</button>
+      <button id="sort-oldest" class="sort-btn px-4 py-1.5 text-xs font-bold rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 transition-colors">Oldest First</button>
+    </div>
+    <button id="refresh-btn" class="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-indigo-600 border border-indigo-200 rounded-full hover:bg-indigo-50 transition-colors">
+      <span class="iconify w-3.5 h-3.5" data-icon="heroicons:arrow-path"></span>
+      Refresh
+    </button>
+  </div>
+
+  <!-- Articles Container -->
+  <div id="articles-container" class="space-y-4">
+    <!-- Skeleton Loaders -->
+    <div class="skeleton-loader space-y-4">
+      ${[1,2,3,4,5].map(() => `
+      <div class="bg-white rounded-2xl border border-slate-100 p-5 animate-pulse">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="h-4 w-24 bg-slate-200 rounded-full"></div>
+          <div class="h-4 w-16 bg-slate-100 rounded-full"></div>
+        </div>
+        <div class="h-5 w-3/4 bg-slate-200 rounded mb-2"></div>
+        <div class="h-4 w-1/2 bg-slate-100 rounded"></div>
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- Sentinel for Infinite Scroll -->
+  <div id="scroll-sentinel" class="h-8 mt-4"></div>
+
+  <!-- Bottom States -->
+  <div id="loading-more" class="hidden py-8 flex flex-col items-center justify-center gap-2 text-slate-400 text-sm">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+    <span>Loading more…</span>
+  </div>
+  <div id="all-loaded" class="hidden py-10 text-center">
+    <span class="iconify text-4xl text-slate-300 mb-2" data-icon="heroicons:check-circle"></span>
+    <p class="text-slate-400 text-sm font-semibold">You've seen all the latest news</p>
+    <button onclick="loadNews()" class="mt-4 px-5 py-2 text-xs font-bold text-indigo-600 border border-indigo-200 rounded-full hover:bg-indigo-50 transition-colors">
+      Refresh Feed
+    </button>
+  </div>
+  <div id="error-state" class="hidden py-10 text-center">
+    <span class="iconify text-4xl text-red-300 mb-2" data-icon="heroicons:exclamation-triangle"></span>
+    <p class="text-red-500 text-sm font-semibold">Failed to load news</p>
+    <button onclick="loadNews()" class="mt-4 px-5 py-2 text-xs font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-colors">
+      Try Again
+    </button>
+  </div>
+
+</main>
+
+<script>
+// ─── State ───────────────────────────────────────────────
+const PAGE_SIZE = 15;
+let allArticles  = [];   // full list from API
+let sortOrder    = 'newest';
+let displayedCount = 0;
+let isLoading    = false;
+
+// ─── Helpers ────────────────────────────────────────────
+function extractDomain(url) {
+  try { return new URL(url).hostname.replace('www.', ''); }
+  catch { return 'Unknown'; }
+}
+
+function formatDate(ds) {
+  if (!ds) return '';
+  try {
+    const d = new Date(ds), now = new Date();
+    const diffH = Math.floor((now - d) / 3600000);
+    const diffD = Math.floor(diffH / 24);
+    if (diffH < 1)  return 'Just now';
+    if (diffH < 24) return `${diffH}h ago`;
+    if (diffD < 7)  return `${diffD}d ago`;
+    return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  } catch { return ds; }
+}
+
+function escapeHtml(t) {
+  const d = document.createElement('div');
+  d.textContent = t;
+  return d.innerHTML;
+}
+
+// ─── Render ─────────────────────────────────────────────
+function renderArticleCard(article, delay = 0) {
+  const domain = extractDomain(article.url || '');
+  const date   = formatDate(article.time);
+  const title  = escapeHtml(article.headline || 'Untitled');
+  const url    = article.url || '#';
+
+  const card = document.createElement('article');
+  card.className = 'article-card bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-all duration-300 overflow-hidden group';
+  card.style.animationDelay = `${delay}ms`;
+  card.innerHTML = `
+    <div class="p-5">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wide">${escapeHtml(domain)}</span>
+        <span class="text-xs text-slate-400 flex items-center gap-1">
+          <span class="iconify w-3.5 h-3.5" data-icon="heroicons:clock"></span>
+          ${date}
+        </span>
+      </div>
+      <h2 class="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug mb-4">
+        <a href="${url}" target="_blank" rel="noopener">${title}</a>
+      </h2>
+      <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+        <a href="${url}" target="_blank" rel="noopener"
+           class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+          Read Article
+          <span class="iconify w-4 h-4" data-icon="heroicons:arrow-right"></span>
+        </a>
+        <span class="text-[10px] text-slate-300">#${article.id || ''}</span>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function displayNextBatch() {
+  const container = document.getElementById('articles-container');
+  const sorted = sortOrder === 'newest'
+    ? [...allArticles].sort((a, b) => new Date(b.time) - new Date(a.time))
+    : [...allArticles].sort((a, b) => new Date(a.time) - new Date(b.time));
+
+  const batch = sorted.slice(displayedCount, displayedCount + PAGE_SIZE);
+  if (batch.length === 0) {
+    showState('all-loaded');
+    disconnectSentinel();
+    return;
+  }
+
+  batch.forEach((article, i) => {
+    container.appendChild(renderArticleCard(article, i * 40));
+  });
+  displayedCount += batch.length;
+
+  if (displayedCount >= allArticles.length) {
+    showState('all-loaded');
+    disconnectSentinel();
+  }
+}
+
+// ─── State Toggles ──────────────────────────────────────
+function showState(which) {
+  ['loading-more', 'all-loaded', 'error-state'].forEach(id => {
+    document.getElementById(id).classList.toggle('hidden', id !== which);
+    document.getElementById(id).classList.toggle('flex', id === which && which === 'loading-more');
+  });
+}
+
+function hideAllStates() {
+  ['loading-more', 'all-loaded', 'error-state'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+    document.getElementById(id).classList.remove('flex');
+  });
+}
+
+// ─── Fetch ──────────────────────────────────────────────
+async function loadNews() {
+  if (isLoading) return;
+  isLoading = true;
+  hideAllStates();
+
+  // Reset
+  allArticles = [];
+  displayedCount = 0;
+  const container = document.getElementById('articles-container');
+  container.innerHTML = '';
+
+  // Show skeleton
+  const skeleton = document.createElement('div');
+  skeleton.id = 'skeleton';
+  skeleton.className = 'space-y-4';
+  skeleton.innerHTML = Array(6).fill(0).map(() => `
+    <div class="bg-white rounded-2xl border border-slate-100 p-5 animate-pulse">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="h-4 w-24 bg-slate-200 rounded-full"></div>
+        <div class="h-4 w-16 bg-slate-100 rounded-full ml-auto"></div>
+      </div>
+      <div class="h-5 w-3/4 bg-slate-200 rounded mb-2"></div>
+      <div class="h-4 w-1/2 bg-slate-100 rounded"></div>
+    </div>`).join('');
+  container.appendChild(skeleton);
+
+  try {
+    const res = await fetch('/api/news/latest?limit=50');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    allArticles = data.results || [];
+
+    // Remove skeleton
+    skeleton.remove();
+
+    // Update header badge
+    const badge = document.getElementById('article-count-badge');
+    badge.textContent = `${allArticles.length} articles`;
+    badge.classList.remove('hidden');
+
+    // Update last refresh
+    document.getElementById('last-refresh-label').textContent =
+      `Last refreshed: ${new Date().toLocaleTimeString()}`;
+
+    displayNextBatch();
+    initSentinel();
+  } catch (err) {
+    console.error(err);
+    skeleton.remove();
+    showState('error-state');
+  } finally {
+    isLoading = false;
+  }
+}
+
+// ─── Infinite Scroll ────────────────────────────────────
+let observer;
+function initSentinel() {
+  if (observer) observer.disconnect();
+  const sentinel = document.getElementById('scroll-sentinel');
+  observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !isLoading) {
+      showState('loading-more');
+      setTimeout(() => {
+        hideAllStates();
+        displayNextBatch();
+      }, 400);
+    }
+  }, { rootMargin: '200px' });
+  observer.observe(sentinel);
+}
+
+function disconnectSentinel() {
+  if (observer) observer.disconnect();
+}
+
+// ─── Sort ───────────────────────────────────────────────
+document.getElementById('sort-newest').addEventListener('click', () => {
+  sortOrder = 'newest';
+  document.getElementById('sort-newest').className = 'sort-btn px-4 py-1.5 text-xs font-bold rounded-full bg-indigo-600 text-white transition-colors';
+  document.getElementById('sort-oldest').className = 'sort-btn px-4 py-1.5 text-xs font-bold rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 transition-colors';
+  reRender();
+});
+
+document.getElementById('sort-oldest').addEventListener('click', () => {
+  sortOrder = 'oldest';
+  document.getElementById('sort-oldest').className = 'sort-btn px-4 py-1.5 text-xs font-bold rounded-full bg-indigo-600 text-white transition-colors';
+  document.getElementById('sort-newest').className = 'sort-btn px-4 py-1.5 text-xs font-bold rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 transition-colors';
+  reRender();
+});
+
+function reRender() {
+  displayedCount = 0;
+  document.getElementById('articles-container').innerHTML = '';
+  hideAllStates();
+  disconnectSentinel();
+  displayNextBatch();
+  initSentinel();
+}
+
+document.getElementById('refresh-btn').addEventListener('click', loadNews);
+
+// ─── Auto Refresh every 5 min ───────────────────────────
+setInterval(loadNews, 5 * 60 * 1000);
+
+// ─── Boot ────────────────────────────────────────────────
+loadNews();
+</script>
+</body>
+</html>

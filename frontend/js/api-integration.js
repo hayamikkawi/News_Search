@@ -291,6 +291,34 @@ function extractDomain(url) {
 }
 
 /**
+ * Extract plain search terms from a query string (strips boolean operators, proximity syntax, quotes)
+ */
+function extractTerms(query) {
+  if (!query) return [];
+  // Remove proximity syntax like #3(word1, word2)
+  let q = query.replace(/#\d+\([^)]*\)/g, ' ');
+  // Remove operators and punctuation
+  q = q.replace(/\b(AND NOT|OR NOT|AND|OR|NOT)\b/gi, ' ');
+  q = q.replace(/["""()]/g, ' ');
+  // Extract words (length >= 2)
+  return [...new Set(q.match(/\b[a-zA-Z0-9]{2,}\b/g) || [])];
+}
+
+/**
+ * Highlight search terms in a text string
+ */
+function highlightKeywords(text, query) {
+  const terms = extractTerms(query);
+  if (!terms.length) return escapeHtml(text);
+  let escaped = escapeHtml(text);
+  terms.forEach(term => {
+    const re = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    escaped = escaped.replace(re, '<mark class="bg-yellow-200 text-yellow-900 rounded px-0.5 not-italic font-semibold">$1</mark>');
+  });
+  return escaped;
+}
+
+/**
  * Render search results
  */
 function renderResults(results) {
@@ -311,12 +339,13 @@ function renderResults(results) {
     const headline = article.headline || 'Untitled Article';
     const url = article.url || '#';
     const id = article.id || index;
+    const highlightedHeadline = highlightKeywords(headline, _currentQuery);
     
     return `
       <article class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 group">
-        <div class="p-6">
+        <div class="p-4">
           <!-- Header -->
-          <div class="flex items-start justify-between mb-4">
+          <div class="flex items-start justify-between mb-2">
             <span class="text-xs font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full">
               ${domain}
             </span>
@@ -324,20 +353,11 @@ function renderResults(results) {
           </div>
           
           <!-- Title -->
-          <h3 class="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors leading-tight">
+          <h3 class="text-base font-bold text-slate-900 mb-0 group-hover:text-indigo-600 transition-colors leading-snug">
             <a href="${url}" target="_blank" rel="noopener" class="news-title-link">
-              ${headline}
+              ${highlightedHeadline}
             </a>
           </h3>
-          
-          <!-- Footer -->
-          <div class="flex items-center justify-between pt-4 border-t border-slate-100">
-            <a href="${url}" target="_blank" rel="noopener" 
-               class="text-sm font-semibold text-indigo-600 hover:text-indigo-700 flex items-center space-x-1">
-              <span>Read Article</span>
-              <span class="iconify" data-icon="heroicons:arrow-right"></span>
-            </a>
-          </div>
         </div>
       </article>
     `;
@@ -346,14 +366,107 @@ function renderResults(results) {
   resultsContainer.innerHTML = html;
 }
 
+// ========================================
+// PAGINATION STATE
+// ========================================
+const PAGE_SIZE = 10;
+let _currentQuery = '';
+let _currentQueryType = 'FreeText';
+let _currentFilters = {};
+let _currentPage = 1;
+let _totalResults = 0;
+
+/**
+ * Get the current search state (query + type). Used by app.js for filter re-runs.
+ */
+function getCurrentSearchState() {
+  return { query: _currentQuery, queryType: _currentQueryType };
+}
+
+/**
+ * Render pagination controls
+ */
+function renderPagination(total, currentPage) {
+  const container = document.getElementById('pagination-container');
+  if (!container) return;
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) {
+    container.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+
+  const btnBase = 'px-3 py-1.5 text-sm font-semibold rounded-lg border transition-colors';
+  const btnActive = 'bg-indigo-600 text-white border-indigo-600';
+  const btnInactive = 'bg-white text-slate-700 border-slate-200 hover:border-indigo-400 hover:text-indigo-600';
+  const btnDisabled = 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed';
+
+  // Build page window: always show first, last, current±2
+  const pages = new Set([1, totalPages]);
+  for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) pages.add(i);
+  const sortedPages = [...pages].sort((a, b) => a - b);
+
+  let html = '';
+
+  // Prev
+  html += `<button class="${btnBase} ${currentPage === 1 ? btnDisabled : btnInactive}" 
+    ${currentPage === 1 ? 'disabled' : `onclick="goToPage(${currentPage - 1})"`}>
+    <span class="iconify" data-icon="heroicons:chevron-left"></span>
+  </button>`;
+
+  let prev = 0;
+  for (const p of sortedPages) {
+    if (prev && p - prev > 1) {
+      html += `<span class="px-1 text-slate-400 text-sm">…</span>`;
+    }
+    html += `<button class="${btnBase} ${p === currentPage ? btnActive : btnInactive}" onclick="goToPage(${p})">${p}</button>`;
+    prev = p;
+  }
+
+  // Next
+  html += `<button class="${btnBase} ${currentPage === totalPages ? btnDisabled : btnInactive}" 
+    ${currentPage === totalPages ? 'disabled' : `onclick="goToPage(${currentPage + 1})"`}>
+    <span class="iconify" data-icon="heroicons:chevron-right"></span>
+  </button>`;
+
+  // Page info
+  html += `<span class="text-xs text-slate-400 ml-2">${currentPage} / ${totalPages} pages · ${total} results</span>`;
+
+  container.innerHTML = html;
+}
+
+/**
+ * Go to a specific page
+ */
+function goToPage(page) {
+  _currentPage = page;
+  const offset = (page - 1) * PAGE_SIZE;
+  _performSearchInternal(_currentQuery, _currentQueryType, { ..._currentFilters, offset, limit: PAGE_SIZE });
+  // Scroll back to results
+  document.getElementById('search-results-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 /**
  * Perform search based on current mode
  */
 async function performSearch(query, queryType = 'FreeText', filters = {}) {
+  _currentQuery = query;
+  _currentQueryType = queryType;
+  _currentFilters = filters;
+  _currentPage = 1;
+  await _performSearchInternal(query, queryType, { ...filters, offset: 0, limit: PAGE_SIZE });
+}
+
+async function _performSearchInternal(query, queryType, filters = {}) {
   if (!query || query.trim().length === 0) {
     showError('Please enter a search query');
     return;
   }
+
+  // Restore normal 3-column layout (in case we were showing home feed)
+  setHomeFeedLayout(false);
 
   try {
     showLoading('Searching for articles...');
@@ -386,6 +499,7 @@ async function performSearch(query, queryType = 'FreeText', filters = {}) {
 
     // Update results count
     const totalResults = response.total || 0;
+    _totalResults = totalResults;
     updateResultsCount(totalResults, query);
 
     // Render results
@@ -395,11 +509,8 @@ async function performSearch(query, queryType = 'FreeText', filters = {}) {
       showEmptyResults(query);
     }
 
-    // Update pagination if needed
-    if (response.has_more) {
-      console.log('More results available');
-      // TODO: Implement pagination UI
-    }
+    // Render pagination
+    renderPagination(totalResults, _currentPage);
 
   } catch (error) {
     console.error('Search error:', error);
@@ -427,6 +538,79 @@ function updateResultsCount(count, query) {
 }
 
 /**
+ * Render home feed (latest news) into main results container
+ */
+function setHomeFeedLayout(active) {
+  const main  = document.getElementById('search-results-section');
+  const aside = main ? main.nextElementSibling : null; // right sidebar
+  if (!main) return;
+  if (active) {
+    // Expand main to span center + right (col-span-9)
+    main.classList.remove('lg:col-span-6');
+    main.classList.add('lg:col-span-9');
+    if (aside) aside.classList.add('hidden');
+  } else {
+    // Restore normal search layout
+    main.classList.remove('lg:col-span-9');
+    main.classList.add('lg:col-span-6');
+    if (aside) aside.classList.remove('hidden');
+  }
+}
+
+function renderHomeFeed(articles) {
+  const container = document.getElementById('search-results-container');
+  const countEl   = document.getElementById('results-count');
+  const pagination = document.getElementById('pagination-container');
+  if (!container) return;
+
+  // Expand layout to col-span-9
+  setHomeFeedLayout(true);
+
+  if (countEl) countEl.innerHTML = '';
+  if (pagination) pagination.classList.add('hidden');
+
+  if (!articles || articles.length === 0) {
+    container.innerHTML = '<div class="text-center py-12 text-slate-400">No articles available</div>';
+    return;
+  }
+
+  const cards = articles.map(article => {
+    const domain = extractDomain(article.url || '');
+    const date   = formatDate(article.time);
+    const title  = article.headline || 'Untitled Article';
+    const url    = article.url || '#';
+    return `
+      <article class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 group">
+        <div class="p-3">
+          <div class="flex items-start justify-between mb-1.5">
+            <span class="text-xs font-bold text-rose-600 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>
+              ${escapeHtml(domain)}
+            </span>
+            <span class="text-xs text-slate-400 whitespace-nowrap ml-2">${date}</span>
+          </div>
+          <h3 class="text-sm font-semibold text-slate-900 mb-0 group-hover:text-indigo-600 transition-colors leading-snug">
+            <a href="${url}" target="_blank" rel="noopener">${escapeHtml(title)}</a>
+          </h3>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  // Header + two-column cards grid
+  container.innerHTML = `
+    <div class="col-span-full flex items-center gap-3 mb-2">
+      <span class="w-3 h-3 bg-rose-500 rounded-full animate-pulse"></span>
+      <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Live Breaking News</h2>
+      <span class="text-xs text-slate-400 font-medium">Latest ${articles.length} articles</span>
+    </div>
+    <div class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-2">
+      ${cards}
+    </div>
+  `;
+}
+
+/**
  * Load latest news
  */
 async function loadLatestNews(limit = 10) {
@@ -434,7 +618,8 @@ async function loadLatestNews(limit = 10) {
     const response = await apiService.getLatestNews(limit);
     
     if (response.results && response.results.length > 0) {
-      updateLatestNewsPanel(response.results);
+      renderHomeFeed(response.results);      // fill main center column
+      updateLatestNewsPanel(response.results); // fill sidebar
     }
   } catch (error) {
     console.error('Failed to load latest news:', error);
@@ -478,14 +663,14 @@ function getActiveDateFilter() {
   let time_from;
   
   switch(value) {
-    case 'today':
-      time_from = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+    case '24h':
+      time_from = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
       break;
     case 'week':
-      time_from = new Date(now.setDate(now.getDate() - 7)).toISOString();
+      time_from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
       break;
     case 'month':
-      time_from = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
+      time_from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
       break;
     default:
       return {};
@@ -509,36 +694,43 @@ function initSearchWithAPI() {
       performSearch(query, 'FreeText', filters);
       hideHistoryDropdown();
     };
-    
-    freetextSearchBtn.addEventListener('click', handleSearch);
-    searchInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        handleSearch();
-      }
-    });
-    
-    // Show history dropdown on focus
-    searchInput.addEventListener('focus', () => {
-      showHistoryDropdown();
-    });
-    
-    // Hide history dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-      const dropdown = document.getElementById('search-history-dropdown');
-      if (dropdown && !dropdown.contains(e.target) && e.target !== searchInput) {
-        hideHistoryDropdown();
-      }
-    });
+
+    if (!freetextSearchBtn.dataset.boundApiSearch) {
+      freetextSearchBtn.addEventListener('click', handleSearch);
+      freetextSearchBtn.dataset.boundApiSearch = '1';
+    }
+
+    if (!searchInput.dataset.boundApiSearch) {
+      searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          handleSearch();
+        }
+      });
+
+      // Show history dropdown on focus
+      searchInput.addEventListener('focus', () => {
+        showHistoryDropdown();
+      });
+      searchInput.dataset.boundApiSearch = '1';
+    }
+
+    if (!document.body.dataset.boundHistoryOutsideClick) {
+      // Hide history dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('search-history-dropdown');
+        const currentInput = document.getElementById('search-input');
+        if (dropdown && currentInput && !dropdown.contains(e.target) && e.target !== currentInput) {
+          hideHistoryDropdown();
+        }
+      });
+      document.body.dataset.boundHistoryOutsideClick = '1';
+    }
   }
 
-  // Boolean search - update existing handler
+  // Boolean search
   const executeBooleanBtn = document.getElementById('execute-boolean-search');
-  if (executeBooleanBtn) {
-    // Remove old listeners by cloning
-    const newBtn = executeBooleanBtn.cloneNode(true);
-    executeBooleanBtn.parentNode.replaceChild(newBtn, executeBooleanBtn);
-    
-    newBtn.addEventListener('click', async () => {
+  if (executeBooleanBtn && !executeBooleanBtn.dataset.boundApiSearch) {
+    executeBooleanBtn.addEventListener('click', async () => {
       const booleanRules = document.getElementById('boolean-rules');
       if (!booleanRules) return;
       
@@ -546,14 +738,14 @@ function initSearchWithAPI() {
       let queryParts = [];
       
       rules.forEach((row, index) => {
-        const operator = row.querySelector('.rule-operator')?.value;
-        const keyword = row.querySelector('.rule-keyword')?.value.trim();
-        
-        if (keyword) {
+        const q = typeof buildRowQuery === 'function' ? buildRowQuery(row) : row.querySelector('.rule-keyword')?.value.trim();
+        if (q) {
           if (index > 0) {
-            queryParts.push(operator);
+            const operator = row.querySelector('.rule-operator')?.value || 'AND';
+            queryParts.push(operator + ' ' + q);
+          } else {
+            queryParts.push(q);
           }
-          queryParts.push(keyword);
         }
       });
       
@@ -566,5 +758,6 @@ function initSearchWithAPI() {
       const filters = getActiveDateFilter();
       await performSearch(query, 'Bool', filters);
     });
+    executeBooleanBtn.dataset.boundApiSearch = '1';
   }
 }

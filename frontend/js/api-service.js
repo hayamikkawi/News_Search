@@ -6,9 +6,10 @@
  */
 const API_CONFIG = {
   // Base URL - points to backend server
-  baseURL: 'http://localhost:8000',
+  baseURL: '/api',
   timeout: 30000, // 30 seconds
   retries: 2,
+  retryBaseDelayMs: 500,
 };
 
 /**
@@ -31,6 +32,26 @@ class APIClient {
     this.baseURL = config.baseURL;
     this.timeout = config.timeout;
     this.retries = config.retries;
+    this.retryBaseDelayMs = config.retryBaseDelayMs;
+  }
+
+  async parseJsonSafely(response) {
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return {};
+    return response.json().catch(() => ({}));
+  }
+
+  shouldRetry(error) {
+    if (error?.name === 'AbortError') return false;
+    if (error instanceof APIError) {
+      return error.status === 429 || error.status >= 500;
+    }
+    // Network/CORS failures are usually surfaced as TypeError in fetch
+    return true;
+  }
+
+  async sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -38,26 +59,24 @@ class APIClient {
    */
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-    const requestOptions = {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    };
-
     let lastError;
     for (let attempt = 0; attempt <= this.retries; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+      const requestOptions = {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+          ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+          ...options.headers,
+        },
+      };
+
       try {
         const response = await fetch(url, requestOptions);
-        clearTimeout(timeoutId);
-
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
+          const errorData = await this.parseJsonSafely(response);
           throw new APIError(
             errorData.detail || `HTTP ${response.status}: ${response.statusText}`,
             response.status,
@@ -65,24 +84,28 @@ class APIClient {
           );
         }
 
-        return await response.json();
+        return await this.parseJsonSafely(response);
       } catch (error) {
-        lastError = error;
-        
-        // Don't retry on client errors (4xx) or abort
-        if (error.name === 'AbortError' || (error.status >= 400 && error.status < 500)) {
-          clearTimeout(timeoutId);
-          throw error;
+        if (error?.name === 'AbortError') {
+          lastError = new APIError('Request timeout', 408, {});
+        } else {
+          lastError = error;
         }
 
-        // Wait before retry (exponential backoff)
-        if (attempt < this.retries) {
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+        const canRetry = attempt < this.retries && this.shouldRetry(lastError);
+        if (!canRetry) {
+          throw lastError;
         }
+
+        // Exponential backoff with mild jitter to reduce synchronized retries
+        const jitter = Math.floor(Math.random() * 100);
+        const delay = this.retryBaseDelayMs * Math.pow(2, attempt) + jitter;
+        await this.sleep(delay);
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
 
-    clearTimeout(timeoutId);
     throw lastError;
   }
 
@@ -90,7 +113,13 @@ class APIClient {
    * GET request
    */
   async get(endpoint, params = {}) {
-    const queryString = new URLSearchParams(params).toString();
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, String(value));
+      }
+    });
+    const queryString = queryParams.toString();
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
     return this.request(url, { method: 'GET' });
   }
