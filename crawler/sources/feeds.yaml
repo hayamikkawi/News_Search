@@ -5,6 +5,9 @@ feeds:
   - url: "https://www.theguardian.com/world/rss"
     name: "Guardian World"
     update_interval: 3600
-  - url: "https://www.ft.com/rss/home"
-    name: "Financial Times"
-    update_interval: 7200
+  - url: "http://rss.cnn.com/rss/cnn_latest.rss/"
+    name: "CNN Latest"
+    update_interval: 3600
+  - url: "https://moxie.foxnews.com/google-publisher/latest.xml"
+    name: "Fox News Latest"
+    update_interval: 3600

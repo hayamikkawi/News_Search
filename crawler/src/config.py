@@ -9,7 +9,7 @@ class CrawlerConfig:
         "CRAWLER_USER_AGENT", "TTDS-SearchEngine-Crawler (academic; contact: s2795693@deu.ac.uk)"
     )
     timeout_seconds: int = int(os.getenv("CRAWLER_TIMEOUT_SECONDS", "15"))
-    max_items_per_feed: int = int(os.getenv("MAX_ITEMS_PER_FEED", "20"))
+    max_items_per_feed: int = int(os.getenv("MAX_ITEMS_PER_FEED", "200"))
     sleep_seconds: float = float(os.getenv("CRAWLER_SLEEP_SECONDS", "1.0"))
     jitter_seconds: float = float(os.getenv("CRAWLER_JITTER_SECONDS", "0.5"))
     output_path: str = os.getenv("CRAWLER_OUTPUT_PATH", "output/articles.jsonl")
@@ -36,8 +36,8 @@ class IndexerConfig:
     output_dir: str = os.getenv("INDEXER_OUTPUT_DIR", "../indexer/input")
     # Output filename for Indexer
     output_filename: str = os.getenv("INDEXER_OUTPUT_FILENAME", "docs.json")
-    # Whether to save content to the database (False saves only metadata to save space)
-    save_content_to_db: bool = os.getenv("SAVE_CONTENT_TO_DB", "false").lower() == "true"
+    # Whether to save content to the database (enabled by default)
+    save_content_to_db: bool = os.getenv("SAVE_CONTENT_TO_DB", "true").lower() == "true"
     # JSON flush mode: "append" (merge with dedup), "overwrite" (replace), "append_only" (fast, no dedup)
     flush_mode: str = os.getenv("INDEXER_FLUSH_MODE", "new_file")
     # File size threshold (MB) for choosing dedup strategy

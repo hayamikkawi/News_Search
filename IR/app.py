@@ -13,6 +13,7 @@ from common_utils.types import DocID
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+from IR.routers.summarizer import router as summarize_router
 
 logger = logging.getLogger("search")
 logging.basicConfig(level=logging.INFO)
@@ -42,7 +43,8 @@ def load_engine_from_version(base_dir: str, version: str) -> IRMain:
     logging.info(f"stats_path: {stats_path}")
     return IRMain(index_path, stats_path)
 
-async def relaod_loop(app, every_seconds: int = 600): 
+
+async def relaod_loop(app, every_seconds: int = 7200):
     logging.info("relaod_loop called")
     base_dir = app.state.index_base_dir
     latest_file = Path(base_dir) / "LATEST.txt"
@@ -82,7 +84,7 @@ async def lifespan(app: FastAPI):
     app.state.index_version = latest
     # reload loop
     app.state.stop_event = asyncio.Event()
-    app.state.reload_task = asyncio.create_task(relaod_loop(app, every_seconds=600))
+    app.state.reload_task = asyncio.create_task(relaod_loop(app, every_seconds=7200))
     yield
     # shutdown
     app.state.stop_event.set()
@@ -97,6 +99,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(summarize_router)
 
 # -------------------------
 # ENDPOINTS
