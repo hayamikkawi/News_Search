@@ -51,12 +51,6 @@ docker-compose -f docker-compose.crawler-full.yml logs -f
 # Check if all containers are running
 docker ps
 
-# You should see the following containers:
-# - ttds_mysql (database)
-# - ttds_crawler (crawler scheduler)
-# - ttds_ir (REST API)
-# - ttds_ui (frontend Nginx)
-```
 
 ### 4. Test API Connection
 ```bash

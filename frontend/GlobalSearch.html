@@ -58,16 +58,9 @@
 <span>Explore Now</span>
 </button>
 </div>
-<!-- Autocomplete Dropdown (Simulated) -->
-<div class="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-2xl border border-slate-100 p-2 z-50 hidden group-focus-within:block">
-<div class="p-3 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center justify-between">
-<span class="text-slate-600">2026 <b>Global Climate Agreement</b> Implementation Details</span>
-<span class="text-xs text-slate-400">Popular Search</span>
-</div>
-<div class="p-3 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center justify-between">
-<span class="text-slate-600"><b>Sustainable Energy</b> Growth in Southeast Asia</span>
-<span class="text-xs text-slate-400">Recent Search</span>
-</div>
+<!-- Autocomplete Dropdown - Search History -->
+<div id="search-history-dropdown" class="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-2xl border border-slate-100 p-2 z-50 hidden">
+<!-- Search history will be populated by JavaScript -->
 </div>
 </div>
 </div>
@@ -103,17 +96,13 @@ Reset
 </div>
 </div>
 </div>
-<div class="flex flex-wrap justify-center gap-3 text-sm text-slate-400">
-<span>Recommended Keywords:</span>
-<a class="hover:text-white transition-colors underline decoration-slate-600" href="#">Space Exploration 2.0</a>
-<a class="hover:text-white transition-colors underline decoration-slate-600" href="#">2026 Winter Games</a>
-</div>
+
 </div>
 </section>
 <!-- Content Grid -->
 <div class="grid grid-cols-12 gap-8">
 <!-- Left Sidebar: Filters -->
-<aside class="col-span-12 lg:col-span-3 space-y-6 sticky top-10">
+<aside class="col-span-12 lg:col-span-3 space-y-6">
 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
 <div class="flex items-center justify-between mb-6">
 <h3 class="font-bold text-slate-900">Refined Filters</h3>
@@ -122,56 +111,12 @@ Reset
 <div class="space-y-6">
 <!-- Date Filter -->
 <div class="space-y-3">
-<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Publish Date (2026)</label>
+<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Publish Date</label>
 <div class="grid grid-cols-2 gap-2" id="date-filter">
-<button class="date-filter-btn px-3 py-2 text-xs bg-indigo-50 text-indigo-700 font-semibold rounded-xl border border-indigo-100 hover:border-indigo-300 active" data-value="24h">Last 24 Hours</button>
+<button class="date-filter-btn px-3 py-2 text-xs bg-white text-slate-600 font-semibold rounded-xl border border-slate-200 hover:border-slate-300" data-value="24h">Last 24h</button>
 <button class="date-filter-btn px-3 py-2 text-xs bg-white text-slate-600 font-semibold rounded-xl border border-slate-200 hover:border-slate-300" data-value="week">Last Week</button>
 <button class="date-filter-btn px-3 py-2 text-xs bg-white text-slate-600 font-semibold rounded-xl border border-slate-200 hover:border-slate-300" data-value="month">Last Month</button>
-<button class="date-filter-btn px-3 py-2 text-xs bg-white text-slate-600 font-semibold rounded-xl border border-slate-200 hover:border-slate-300" data-value="custom">Custom</button>
-</div>
-</div>
-<!-- Content Type -->
-<div class="space-y-3">
-<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Content Type</label>
-<div class="space-y-2">
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500" checked/>
-<span class="text-sm text-slate-700 font-medium">In-Depth Analysis</span>
-</label>
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">Breaking News</span>
-</label>
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">Data Report</span>
-</label>
-</div>
-</div>
-<!-- Location Filter -->
-<div class="space-y-3">
-<label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Geographic Region</label>
-<div class="space-y-2">
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">North America</span>
-</label>
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">Europe</span>
-</label>
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">Asia-Pacific</span>
-</label>
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">Middle East & Africa</span>
-</label>
-<label class="flex items-center space-x-3 cursor-pointer group">
-<input type="checkbox" class="w-5 h-5 border-2 border-slate-300 rounded-md cursor-pointer accent-indigo-500"/>
-<span class="text-sm text-slate-700 font-medium">Latin America</span>
-</label>
+<button class="date-filter-btn px-3 py-2 text-xs bg-indigo-50 text-indigo-700 font-semibold rounded-xl border border-indigo-100 hover:border-indigo-300 active" data-value="all">All Time</button>
 </div>
 </div>
 </div>
@@ -181,194 +126,43 @@ Apply Filters
 </div>
 </aside>
 <!-- Center: Search Results -->
-<main class="col-span-12 lg:col-span-6 space-y-6">
-<div class="flex items-center justify-between px-2">
-<span class="text-sm font-bold text-slate-500 font-mono italic">Found approximately 124,000 matching results (0.32s)</span>
-<div class="flex items-center space-x-2 text-sm">
-<span class="text-slate-400">Sort by:</span>
-<select class="bg-transparent font-bold text-slate-900 outline-none border-none cursor-pointer">
-<option>Newest First</option>
-<option>Relevance</option>
-</select>
-</div>
-</div>
-<!-- Result Card 1 -->
-<article class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all group">
-<div class="flex gap-6">
-<div class="flex-1 space-y-3">
-<div class="flex items-center space-x-2">
-<span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase rounded-lg">Energy & Environment</span>
-<span class="text-xs text-slate-400 font-medium">January 27, 2026 09:45AM</span>
-</div>
-<h2 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer news-title" 
-                data-id="1"
-                data-category="Energy & Environment"
-                data-date="January 27, 2026 09:45AM"
-                data-title="Global Superconducting Energy Storage Network Begins Pilot Phase in Northern Europe, Cutting Cross-Border Power Loss by 40%"
-                data-image="https://modao.cc/agent-py/media/generated_images/2026-01-27/877841c9f8a04602b3bea22e897dc4ea.jpg">
-                Global Superconducting Energy Storage Network Begins Pilot Phase in Northern Europe, Cutting Cross-Border Power Loss by 40%
-              </h2>
-<p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
-                Today, the superconducting grid project led by the International Energy Organization officially completed its first phase of grid connection. The project marks a breakthrough in core technology and provides a new solution for clean energy transmission around the Arctic Circle. Within the next three years, this technology is expected to...
-              </p>
-</div>
-<div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
-<img alt="News Image" class="w-full h-full object-cover" id="img-2" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/877841c9f8a04602b3bea22e897dc4ea.jpg"/>
-</div>
-</div>
-</article>
-<!-- Result Card 2 -->
-<article class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all group">
-<div class="flex gap-6">
-<div class="flex-1 space-y-3">
-<div class="flex items-center space-x-2">
-<span class="px-2.5 py-1 bg-violet-100 text-violet-700 text-[10px] font-black uppercase rounded-lg">Cutting-Edge Tech</span>
-<span class="text-xs text-slate-400 font-medium">January 27, 2026 08:30AM</span>
-</div>
-<h2 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer news-title"
-                data-id="2"
-                data-category="Cutting-Edge Tech"
-                data-date="January 27, 2026 08:30AM"
-                data-title="Universal Quantum Computers Enter External Testing Phase, Programmers Relearn Fundamental Principles"
-                data-image="https://modao.cc/agent-py/media/generated_images/2026-01-27/d45ed7a9e6e44a669b5526420c09d836.jpg">
-                Universal Quantum Computers Enter External Testing Phase, Programmers Relearn Fundamental Principles
-              </h2>
-<p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
-                With IBM and Google's joint lab announcing that the Tianzhou quantum chip series completed 10,000 connectivity tests, the commercialization of the quantum era is gradually unfolding from these laboratories. Tech giants are busy forming new algorithm teams to cope with the upcoming computing power overflow...
-              </p>
-</div>
-<div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
-<img alt="Tech Image" class="w-full h-full object-cover" id="img-3" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/d45ed7a9e6e44a669b5526420c09d836.jpg"/>
-</div>
-</div>
-</article>
-<!-- Result Card 3 -->
-<article class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all group">
-<div class="flex gap-6">
-<div class="flex-1 space-y-3">
-<div class="flex items-center space-x-2">
-<span class="px-2.5 py-1 bg-cyan-100 text-cyan-700 text-[10px] font-black uppercase rounded-lg">Climate & Environment</span>
-<span class="text-xs text-slate-400 font-medium">January 27, 2026 07:15AM</span>
-</div>
-<h2 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer">
-                Global Carbon Sequestration Project Reaches Milestone: 500 Million Tons Stored Annually
-              </h2>
-<p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
-                The United Nations Climate Initiative announced that the world's largest carbon capture facility in Iceland has successfully stored over 500 million tons of CO₂ annually. This breakthrough represents a turning point in climate change mitigation strategies. Scientists estimate that this technology could reduce atmospheric carbon...
-              </p>
-</div>
-<div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
-<img alt="Climate Image" class="w-full h-full object-cover" id="img-4" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/climate-milestone.jpg"/>
-</div>
-</div>
-</article>
-<!-- Result Card 4 -->
-<article class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all group">
-<div class="flex gap-6">
-<div class="flex-1 space-y-3">
-<div class="flex items-center space-x-2">
-<span class="px-2.5 py-1 bg-pink-100 text-pink-700 text-[10px] font-black uppercase rounded-lg">Healthcare & Science</span>
-<span class="text-xs text-slate-400 font-medium">January 26, 2026 11:20PM</span>
-</div>
-<h2 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer">
-                Personalized Gene Therapy Becomes Mainstream: Success Rate Exceeds 95% for Common Diseases
-              </h2>
-<p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
-                Leading medical institutions in Singapore and Switzerland have jointly published a groundbreaking study showing that personalized gene therapy can achieve 95% recovery rates for previously incurable genetic disorders. The cost per treatment has dropped by 60% year-over-year, making it accessible to patients worldwide...
-              </p>
-</div>
-<div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
-<img alt="Healthcare Image" class="w-full h-full object-cover" id="img-5" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/gene-therapy.jpg"/>
-</div>
-</div>
-</article>
-<!-- Result Card 5 -->
-<article class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all group">
-<div class="flex gap-6">
-<div class="flex-1 space-y-3">
-<div class="flex items-center space-x-2">
-<span class="px-2.5 py-1 bg-orange-100 text-orange-700 text-[10px] font-black uppercase rounded-lg">Economics & Markets</span>
-<span class="text-xs text-slate-400 font-medium">January 26, 2026 03:45PM</span>
-</div>
-<h2 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer">
-                World GDP Growth Accelerates: 4.2% Expansion Driven by Green Technology Investments
-              </h2>
-<p class="text-slate-600 text-sm leading-relaxed line-clamp-2">
-                The IMF released its latest economic forecast showing that global GDP growth has surpassed expectations, with renewable energy and quantum computing sectors leading the expansion. Emerging markets in Asia and Africa are showing particularly strong performance, contributing 60% of the total growth...
-              </p>
-</div>
-<div class="w-32 h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
-<img alt="Economics Image" class="w-full h-full object-cover" id="img-6" src="https://modao.cc/agent-py/media/generated_images/2026-01-27/gdp-growth.jpg"/>
-</div>
-</div>
-</article>
+<main class="col-span-12 lg:col-span-6 space-y-6" id="search-results-section">
+<!-- Results count - dynamically updated by JavaScript -->
+<div id="results-count" class="text-sm font-medium text-slate-600 px-2"></div>
 
+<!-- Search results container - populated by JavaScript -->
+<div class="grid gap-6" id="search-results-container">
+<!-- Live news loading placeholder -->
+<div class="col-span-full flex flex-col items-center justify-center py-20">
+  <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600 mb-4"></div>
+  <p class="text-slate-500 text-sm">Loading latest news…</p>
+</div>
+</div>
+
+<!-- Pagination -->
+<div id="pagination-container" class="hidden flex items-center justify-center gap-2 pt-4 pb-2 flex-wrap">
+</div>
 </main>
 <!-- Right Sidebar: Live Pulse -->
-<aside class="col-span-12 lg:col-span-3 space-y-6 sticky top-10">
+<aside class="col-span-12 lg:col-span-3 space-y-6">
 <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
 <div class="bg-slate-50 p-4 border-b border-slate-200 flex items-center space-x-2">
 <div class="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
 <h3 class="font-bold text-slate-900 text-sm">Live Breaking News</h3>
 </div>
-<div class="h-[500px] overflow-y-auto hide-scrollbar p-2">
+<div class="p-2">
 <div id="latest-news-panel" class="space-y-4">
-<!-- Item 1 -->
-<div class="p-4 hover:bg-slate-50 rounded-2xl transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-<div class="flex justify-between items-center mb-1">
-<span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase">International News</span>
-<span class="text-[10px] text-slate-400">2 minutes ago</span>
-</div>
-<p class="text-sm text-slate-700 font-semibold line-clamp-2">East African Community Announces Unified Digital Currency Settlement System</p>
-</div>
-<!-- Item 2 -->
-<div class="p-4 hover:bg-slate-50 rounded-2xl transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-<div class="flex justify-between items-center mb-1">
-<span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded uppercase">Entertainment</span>
-<span class="text-[10px] text-slate-400">12 minutes ago</span>
-</div>
-<p class="text-sm text-slate-700 font-semibold line-clamp-2">First AI-Generated Feature Film Receives Venice Nomination</p>
-</div>
-<!-- Item 3 -->
-<div class="p-4 hover:bg-slate-50 rounded-2xl transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-<div class="flex justify-between items-center mb-1">
-<span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded uppercase">Sports</span>
-<span class="text-[10px] text-slate-400">15 minutes ago</span>
-</div>
-<p class="text-sm text-slate-700 font-semibold line-clamp-2">2026 World Cup Asia Qualifiers Latest Standings Released</p>
-</div>
-<!-- Item 4 -->
-<div class="p-4 hover:bg-slate-50 rounded-2xl transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-<div class="flex justify-between items-center mb-1">
-<span class="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded uppercase">Breaking News</span>
-<span class="text-[10px] text-slate-400">30 minutes ago</span>
-</div>
-<p class="text-sm text-slate-700 font-semibold line-clamp-2">Major Larsen Ice Shelf Collapse in Antarctica, Alert Issued</p>
-</div>
-<!-- Item 5 -->
-<div class="p-4 hover:bg-slate-50 rounded-2xl transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-<div class="flex justify-between items-center mb-1">
-<span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase">Technology</span>
-<span class="text-[10px] text-slate-400">1 hour ago</span>
-</div>
-<p class="text-sm text-slate-700 font-semibold line-clamp-2">Solid-State Battery Energy Density Reaches 800Wh/kg</p>
+<!-- Latest news will be loaded dynamically -->
+<div class="text-center py-8 text-slate-400 text-sm">
+Loading latest news...
 </div>
 </div>
 </div>
 <div class="p-4 bg-white border-t border-slate-100 text-center">
-<button class="text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">View Archive History →</button>
+<a href="LatestNews.html" class="text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">View All Latest News →</a>
 </div>
 </div>
-<div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-<h3 class="font-bold text-slate-900 mb-4">Core Topics</h3>
-<div class="flex flex-wrap gap-2">
-<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># Renewable Energy</span>
-<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># 2026 Carbon Neutral</span>
-<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># Superconductor Tech</span>
-<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># Grid Modernization</span>
-<span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full cursor-pointer hover:bg-indigo-600 hover:text-white transition-colors"># Climate Diplomacy</span>
-</div>
-</div>
+
 </aside>
 </div>
 </main>

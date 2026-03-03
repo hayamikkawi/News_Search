@@ -1,0 +1,6 @@
+cd d:\web-searcher\IR
+$env:PYTHONPATH="d:\web-searcher"
+python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
+
+cd d:\web-searcher\frontend
+python -m http.server 3000

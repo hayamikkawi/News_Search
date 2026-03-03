@@ -225,31 +225,30 @@ function initApplyFilters() {
   if (!applyFiltersBtn) return;
 
   applyFiltersBtn.addEventListener('click', () => {
-    // Get all selected filters
-    const selectedContentTypes = [];
-    const contentTypeCheckboxes = document.querySelectorAll('label:has(input[type="checkbox"]) input[type="checkbox"]');
+    // Re-run current search with updated date filter
+    // Use getCurrentSearchState() to reliably get last query + type (FreeText or Bool)
+    const state = typeof getCurrentSearchState === 'function' ? getCurrentSearchState() : {};
+    const query = (state.query && state.query.trim())
+      ? state.query.trim()
+      : (() => { const el = document.getElementById('search-input'); return el ? el.value.trim() : ''; })();
+    const queryType = (state.query && state.query.trim() && state.queryType)
+      ? state.queryType
+      : 'FreeText';
 
-    contentTypeCheckboxes.forEach(checkbox => {
-      if (checkbox.checked) {
-        const label = checkbox.parentElement.querySelector('span');
-        if (label) {
-          selectedContentTypes.push(label.textContent.trim());
-        }
-      }
-    });
+    if (!query) {
+      applyFiltersBtn.textContent = 'Enter a query first';
+      setTimeout(() => { applyFiltersBtn.textContent = 'Apply Filters'; }, 1500);
+      return;
+    }
 
-    const selectedDate = document.querySelector('.date-filter-btn.active');
+    if (typeof getActiveDateFilter !== 'undefined' && typeof performSearch !== 'undefined') {
+      const filters = getActiveDateFilter();
+      performSearch(query, queryType, filters);
+    }
 
-    console.log('Applied Filters:', {
-      dateFilter: selectedDate ? selectedDate.dataset.value : 'none',
-      contentTypes: selectedContentTypes
-    });
-
-    // Show feedback to user
     applyFiltersBtn.textContent = 'Filters Applied ✓';
     applyFiltersBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
     applyFiltersBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
-
     setTimeout(() => {
       applyFiltersBtn.textContent = 'Apply Filters';
       applyFiltersBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
@@ -295,9 +294,10 @@ function initSearchModeToggle() {
         freetextSearch.classList.remove('hidden');
         booleanSearch.classList.add('hidden');
       } else {
-        btn.style.backgroundColor = 'rgba(255,255,255,0.2)';
-        btn.style.color = 'white';
-        btn.style.border = '2px solid rgba(255,255,255,0.3)';
+        // Boolean active
+        btn.style.backgroundColor = 'white';
+        btn.style.color = '#4f46e5';
+        btn.style.border = 'none';
 
         const freetextBtn = document.getElementById('mode-freetext');
         if (freetextBtn) {
@@ -325,83 +325,140 @@ function initSearchModeToggle() {
  */
 function createRuleRow(isFirst = false) {
   const row = document.createElement('div');
-  row.className = 'boolean-rule-row flex gap-3 items-center bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/20';
+  row.className = 'boolean-rule-row flex flex-col gap-2 bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/20';
 
-  // Logical Operator (AND/OR/NOT)
+  // ── Top line: operator + type + delete + add ──
+  const topLine = document.createElement('div');
+  topLine.className = 'flex gap-2 items-center';
+
+  // Logical Operator
   const operatorSelect = document.createElement('select');
   operatorSelect.className = 'rule-operator text-sm font-semibold px-3 py-2 rounded-lg border border-slate-400 cursor-pointer';
-  operatorSelect.style.backgroundColor = '#2d3748';
-  operatorSelect.style.color = 'white';
-  operatorSelect.style.minWidth = '100px';
-  operatorSelect.innerHTML = '<option value="AND">AND</option><option value="OR">OR</option><option value="NOT">NOT</option>';
+  operatorSelect.style.cssText = 'background-color:#2d3748;color:white;min-width:110px';
+  operatorSelect.innerHTML = '<option value="AND">AND</option><option value="OR">OR</option><option value="AND NOT">AND NOT</option><option value="OR NOT">OR NOT</option>';
   if (isFirst) operatorSelect.style.display = 'none';
 
-  // Keyword Input
-  const keywordInput = document.createElement('input');
-  keywordInput.className = 'rule-keyword flex-1 px-4 py-2 rounded-lg text-slate-900 outline-none text-sm placeholder:text-slate-400';
-  keywordInput.type = 'text';
-  keywordInput.placeholder = 'Enter keyword...';
-
-  // Field Selector
-  const fieldSelect = document.createElement('select');
-  fieldSelect.className = 'rule-field text-sm font-semibold px-3 py-2 rounded-lg border border-slate-400 cursor-pointer';
-  fieldSelect.style.backgroundColor = '#2d3748';
-  fieldSelect.style.color = 'white';
-  fieldSelect.style.minWidth = '130px';
-  fieldSelect.innerHTML = `
-    <option value="">All Fields</option>
-    <option value="title">Title</option>
-    <option value="content">Content</option>
-    <option value="author">Author</option>
-    <option value="location">Location</option>
-  `;
+  // Search Type
+  const typeSelect = document.createElement('select');
+  typeSelect.className = 'rule-type text-sm font-semibold px-3 py-2 rounded-lg border border-slate-400 cursor-pointer';
+  typeSelect.style.cssText = 'background-color:#2d3748;color:white;min-width:130px';
+  typeSelect.innerHTML = '<option value="term">Term</option><option value="phrase">Phrase</option><option value="proximity">Proximity</option>';
 
   // Delete Button
   const deleteBtn = document.createElement('button');
-  deleteBtn.className = 'delete-rule px-3 py-2 bg-red-500/20 text-red-200 rounded-lg hover:bg-red-500/40 transition-colors';
+  deleteBtn.className = 'delete-rule ml-auto px-3 py-2 bg-red-500/20 text-red-200 rounded-lg hover:bg-red-500/40 transition-colors';
   if (isFirst) deleteBtn.style.display = 'none';
   deleteBtn.innerHTML = '<span class="iconify" data-icon="heroicons:x-mark"></span>';
-  deleteBtn.addEventListener('click', () => {
-    row.remove();
-    // Show + button on the new last row
-    const booleanRules = document.getElementById('boolean-rules');
-    if (!booleanRules) return;
-    const rows = booleanRules.querySelectorAll('.boolean-rule-row');
-    if (rows.length > 0) {
-      const lastRow = rows[rows.length - 1];
-      const lastAddBtn = lastRow.querySelector('.add-rule');
-      if (lastAddBtn) lastAddBtn.style.display = 'block';
-    }
-    updateQueryPreview();
-  });
 
   // Add Button
   const addBtn = document.createElement('button');
   addBtn.className = 'add-rule px-3 py-2 bg-emerald-500/20 text-emerald-200 rounded-lg hover:bg-emerald-500/40 transition-colors';
   addBtn.innerHTML = '<span class="iconify" data-icon="heroicons:plus"></span>';
-  addBtn.addEventListener('click', () => {
-    // Hide + button on current row
-    addBtn.style.display = 'none';
-    // Create and add new row
+
+  topLine.appendChild(operatorSelect);
+  topLine.appendChild(typeSelect);
+  topLine.appendChild(deleteBtn);
+  topLine.appendChild(addBtn);
+
+  // ── Dynamic input area ──
+  const inputArea = document.createElement('div');
+  inputArea.className = 'rule-inputs flex gap-2 items-center flex-wrap';
+
+  function mkInput(cls, placeholder, extraStyle = '') {
+    const inp = document.createElement('input');
+    inp.className = cls + ' px-4 py-2 rounded-lg text-slate-900 outline-none text-sm placeholder:text-slate-400';
+    inp.type = 'text';
+    inp.placeholder = placeholder;
+    if (extraStyle) inp.style.cssText = extraStyle;
+    inp.addEventListener('input', updateQueryPreview);
+    return inp;
+  }
+
+  function mkLabel(text) {
+    const s = document.createElement('span');
+    s.className = 'text-white/60 text-xs font-semibold shrink-0';
+    s.textContent = text;
+    return s;
+  }
+
+  function renderInputs(type) {
+    inputArea.innerHTML = '';
+    if (type === 'term') {
+      inputArea.appendChild(mkInput('rule-keyword flex-1', 'Enter keyword…'));
+    } else if (type === 'phrase') {
+      inputArea.appendChild(mkInput('rule-phrase-w1 flex-1', 'First word…'));
+      inputArea.appendChild(mkLabel('+'));
+      inputArea.appendChild(mkInput('rule-phrase-w2 flex-1', 'Second word…'));
+      const hint = document.createElement('span');
+      hint.className = 'text-white/30 text-xs w-full';
+      hint.textContent = 'Matches documents where both words appear consecutively';
+      inputArea.appendChild(hint);
+    } else if (type === 'proximity') {
+      inputArea.appendChild(mkInput('rule-prox-w1 flex-1', 'Word 1…'));
+      inputArea.appendChild(mkLabel('within'));
+      const nInp = document.createElement('input');
+      nInp.className = 'rule-prox-n w-14 px-2 py-2 rounded-lg text-slate-900 outline-none text-sm text-center';
+      nInp.type = 'number';
+      nInp.min = '1'; nInp.max = '99'; nInp.value = '3';
+      nInp.addEventListener('input', updateQueryPreview);
+      inputArea.appendChild(nInp);
+      inputArea.appendChild(mkLabel('words of'));
+      inputArea.appendChild(mkInput('rule-prox-w2 flex-1', 'Word 2…'));
+      const hint = document.createElement('span');
+      hint.className = 'text-white/30 text-xs w-full';
+      hint.textContent = 'Matches documents where Word 1 appears within N words of Word 2';
+      inputArea.appendChild(hint);
+    }
+  }
+
+  renderInputs('term');
+
+  typeSelect.addEventListener('change', () => { renderInputs(typeSelect.value); updateQueryPreview(); });
+  operatorSelect.addEventListener('change', updateQueryPreview);
+
+  deleteBtn.addEventListener('click', () => {
+    row.remove();
     const booleanRules = document.getElementById('boolean-rules');
     if (!booleanRules) return;
-    const newRow = createRuleRow(false);
-    booleanRules.appendChild(newRow);
+    const rows = booleanRules.querySelectorAll('.boolean-rule-row');
+    if (rows.length > 0) {
+      const lastAddBtn = rows[rows.length - 1].querySelector('.add-rule');
+      if (lastAddBtn) lastAddBtn.style.display = 'block';
+    }
     updateQueryPreview();
   });
 
-  // Update preview on any change
-  operatorSelect.addEventListener('change', updateQueryPreview);
-  keywordInput.addEventListener('input', updateQueryPreview);
-  fieldSelect.addEventListener('change', updateQueryPreview);
+  addBtn.addEventListener('click', () => {
+    addBtn.style.display = 'none';
+    const booleanRules = document.getElementById('boolean-rules');
+    if (!booleanRules) return;
+    booleanRules.appendChild(createRuleRow(false));
+    updateQueryPreview();
+  });
 
-  row.appendChild(operatorSelect);
-  row.appendChild(keywordInput);
-  row.appendChild(fieldSelect);
-  row.appendChild(deleteBtn);
-  row.appendChild(addBtn);
-
+  row.appendChild(topLine);
+  row.appendChild(inputArea);
   return row;
+}
+
+/**
+ * Build query string from a single rule row
+ */
+function buildRowQuery(row) {
+  const type = row.querySelector('.rule-type')?.value || 'term';
+  if (type === 'term') {
+    return row.querySelector('.rule-keyword')?.value.trim() || null;
+  } else if (type === 'phrase') {
+    const w1 = row.querySelector('.rule-phrase-w1')?.value.trim();
+    const w2 = row.querySelector('.rule-phrase-w2')?.value.trim();
+    return (w1 && w2) ? `"${w1} ${w2}"` : null;
+  } else if (type === 'proximity') {
+    const w1 = row.querySelector('.rule-prox-w1')?.value.trim();
+    const w2 = row.querySelector('.rule-prox-w2')?.value.trim();
+    const n  = row.querySelector('.rule-prox-n')?.value || '3';
+    return (w1 && w2) ? `#${n}(${w1}, ${w2})` : null;
+  }
+  return null;
 }
 
 /**
@@ -417,36 +474,21 @@ function updateQueryPreview() {
   if (rules.length === 0) return;
 
   let queryParts = [];
-  let hasValidRule = false;
 
   rules.forEach((row, index) => {
-    const operator = row.querySelector('.rule-operator')?.value;
-    const keyword = row.querySelector('.rule-keyword')?.value.trim();
-    const field = row.querySelector('.rule-field')?.value;
-
-    if (keyword) {
-      hasValidRule = true;
-      let part = '';
-
-      // Add operator from previous rule
+    const q = buildRowQuery(row);
+    if (q) {
       if (index > 0) {
-        part += operator + ' ';
-      }
-
-      // Build the expression
-      if (field) {
-        part += `"${keyword}" (${field})`;
+        const op = row.querySelector('.rule-operator')?.value || 'AND';
+        queryParts.push(op + ' ' + q);
       } else {
-        part += `"${keyword}"`;
+        queryParts.push(q);
       }
-
-      queryParts.push(part);
     }
   });
 
-  if (hasValidRule) {
-    const query = queryParts.join(' ');
-    queryPreviewText.innerHTML = `<span style="color: #a0aec0;">${query}</span>`;
+  if (queryParts.length > 0) {
+    queryPreviewText.innerHTML = `<span style="color:#a0aec0">${queryParts.join(' ')}</span>`;
   } else {
     queryPreviewText.innerHTML = `<span class="text-white/40">Your boolean expression will appear here...</span>`;
   }
@@ -462,54 +504,55 @@ function initBooleanSearch() {
 
   if (!booleanRules || !executeBooleanBtn || !resetBooleanBtn) return;
 
-  // Execute boolean search
-  executeBooleanBtn.addEventListener('click', () => {
-    const rules = booleanRules.querySelectorAll('.boolean-rule-row');
-    let queryParts = [];
-    let hasValidRule = false;
+  // Keep demo search handler only when API integration is unavailable.
+  if (typeof performSearch === 'undefined') {
+    executeBooleanBtn.addEventListener('click', () => {
+      const rules = booleanRules.querySelectorAll('.boolean-rule-row');
+      let queryParts = [];
+      let hasValidRule = false;
 
-    rules.forEach((row, index) => {
-      const operator = row.querySelector('.rule-operator')?.value;
-      const keyword = row.querySelector('.rule-keyword')?.value.trim();
-      const field = row.querySelector('.rule-field')?.value;
+      rules.forEach((row, index) => {
+        const operator = row.querySelector('.rule-operator')?.value;
+        const keyword = row.querySelector('.rule-keyword')?.value.trim();
+        const field = row.querySelector('.rule-field')?.value;
 
-      if (keyword) {
-        hasValidRule = true;
-        let part = '';
+        if (keyword) {
+          hasValidRule = true;
+          let part = '';
 
-        if (index > 0) {
-          part += operator + ' ';
+          if (index > 0) {
+            part += operator + ' ';
+          }
+
+          if (field) {
+            part += `"${keyword}" (${field})`;
+          } else {
+            part += `"${keyword}"`;
+          }
+
+          queryParts.push(part);
         }
+      });
 
-        if (field) {
-          part += `"${keyword}" (${field})`;
-        } else {
-          part += `"${keyword}"`;
-        }
-
-        queryParts.push(part);
+      if (!hasValidRule) {
+        alert('Please enter at least one keyword');
+        return;
       }
+
+      const finalQuery = queryParts.join(' ');
+      console.log('Executing Boolean Search Query:', finalQuery);
+
+      // Show feedback
+      executeBooleanBtn.textContent = 'Searching...';
+      executeBooleanBtn.disabled = true;
+
+      setTimeout(() => {
+        executeBooleanBtn.innerHTML = '<span class="iconify" data-icon="heroicons:magnifying-glass"></span> <span>Search</span>';
+        executeBooleanBtn.disabled = false;
+        console.log('Search Results Updated (Demo)');
+      }, 1500);
     });
-
-    if (!hasValidRule) {
-      alert('Please enter at least one keyword');
-      return;
-    }
-
-    const finalQuery = queryParts.join(' ');
-    console.log('Executing Boolean Search Query:', finalQuery);
-
-    // Show feedback
-    executeBooleanBtn.textContent = 'Searching...';
-    executeBooleanBtn.disabled = true;
-
-    setTimeout(() => {
-      executeBooleanBtn.innerHTML = '<span class="iconify" data-icon="heroicons:magnifying-glass"></span> <span>Search</span>';
-      executeBooleanBtn.disabled = false;
-      console.log('Search Results Updated (Demo)');
-      // In a real app, you would send this query to your backend
-    }, 1500);
-  });
+  }
 
   // Reset boolean search
   resetBooleanBtn.addEventListener('click', () => {
@@ -587,7 +630,7 @@ function initApp() {
 
   // Load latest news (if API is available)
   if (typeof loadLatestNews !== 'undefined') {
-    loadLatestNews(10);
+    loadLatestNews(50);
     console.log('Loading latest news...');
   }
 
