@@ -92,8 +92,11 @@ class JSONStreamProcessor:
     def map_json_to_article(self, json_obj: Dict[str, Any]) -> ArticleRecord:
         url = json_obj.get("url", "")
         date_str = json_obj.get("date")
-        content = json_obj.get("content", "")
-        title = json_obj.get("title", "")
+        # Compatible with both schemas:
+        # - old: content/title
+        # - new: text/headline
+        content = json_obj.get("content") or json_obj.get("text", "")
+        title = json_obj.get("title") or json_obj.get("headline", "")
 
         rss_published_at = None
         if date_str:
