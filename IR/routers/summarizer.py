@@ -4,7 +4,6 @@ import asyncio
 import logging
 from common_utils.types import DocID
 import httpx
-from bs4 import BeautifulSoup
 from fastapi import APIRouter, HTTPException, Request
 import trafilatura
 from transformers import pipeline
@@ -28,13 +27,6 @@ class SummarizeRequest(BaseModel):
 # load once (slow to load, keep global)
 summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 tokenizer = summarizer.tokenizer
-
-# def extract_text_basic(html: str) -> str:
-#     soup = BeautifulSoup(html, "html.parser")
-#     for tag in soup(["script", "style", "nav", "footer", "header"]):
-#         tag.decompose()
-#     text = " ".join(soup.get_text(" ").split())
-#     return text
 
 def get_clean_text(url: str, html: str) -> str:
     txt = trafilatura.extract(html, include_comments=False, include_tables=False)
@@ -79,62 +71,15 @@ async def summarize(request: Request, body: SummarizeRequest):
     if not texts:
         raise HTTPException(502, "Could not fetch any article text to summarize")
 
-    # 5) summarize each, then summarize the summaries (two-stage)
-    # per_article_summaries = await asyncio.to_thread(
-    #     lambda: [summarize_long_text(t) for t in texts]
-    # )
-    # combined = "\n".join(per_article_summaries)
-    # logging.info(f"combined: {combined}")
-    # final_summary = await asyncio.to_thread(lambda: summarize_text(combined))
-    # logging.info(f"final_summary: {final_summary}")
-    # return {"summary": final_summary, "sources": used_ids}
-    # 6) extractive summary
+    # 5) extractive summary for each article (extract top 5 sentences)
     per_article_extracted: list[str] = []
     for text in texts:
         summary = extractive_summary(text, sentences=5)
         logging.info(f"summary: {summary}")
         per_article_extracted.append(summary)
     per_article_summary: list[str] = []
+    # 6) summarize each article based on its top 5 snetences.
     for extracted in per_article_extracted:
         summary = await asyncio.to_thread(lambda: summarize_text(extracted))
         per_article_summary.append(summary)
-    # final_summary = extractive_summary(combined, sentences=5)
     return {"summary": f"\n".join(per_article_summary), "sources": used_ids} 
-
-# def summarize_long_text(text: str) -> str:
-#     max_tokens = 200 
-
-#     # tokenize once
-#     tokens = tokenizer.encode(text, truncation=False)
-
-#     # split tokens into chunks
-#     chunks = [
-#         tokens[i:i+max_tokens]
-#         for i in range(0, len(tokens), max_tokens)
-#     ]
-#     logging.info(f"text has {len(chunks)} chunks")
-#     chunks = chunks[:1]
-
-#     summaries = []
-
-#     for chunk in chunks:
-#         chunk_text = tokenizer.decode(chunk, skip_special_tokens=True)
-
-#         out = summarizer(
-#             chunk_text,
-#             max_length=80,
-#             min_length=20,
-#             do_sample=False,
-#         )
-#         summaries.append(out[0]["summary_text"])
-
-#     combined = " ".join(summaries)
-
-#     final = summarizer(
-#         combined,
-#         max_length=140,
-#         min_length=60,
-#         do_sample=False,
-#     )
-
-#     return final[0]["summary_text"]
