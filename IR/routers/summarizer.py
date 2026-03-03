@@ -89,15 +89,17 @@ async def summarize(request: Request, body: SummarizeRequest):
     # logging.info(f"final_summary: {final_summary}")
     # return {"summary": final_summary, "sources": used_ids}
     # 6) extractive summary
-    per_article_summaries: list[str] = []
+    per_article_extracted: list[str] = []
     for text in texts:
         summary = extractive_summary(text, sentences=2)
         logging.info(f"summary: {summary}")
-        per_article_summaries.append(summary)
-    combined = "\n".join(per_article_summaries)
-    final_summary = await asyncio.to_thread(lambda: summarize_text(combined))
+        per_article_extracted.append(summary)
+    per_article_summary: list[str] = []
+    for extracted in per_article_extracted:
+        summary = await asyncio.to_thread(lambda: summarize_text(extracted))
+        per_article_summary.append(summary)
     # final_summary = extractive_summary(combined, sentences=5)
-    return {"summary": final_summary, "sources": used_ids} 
+    return {"summary": f"\n".join(per_article_summary), "sources": used_ids} 
 
 # def summarize_long_text(text: str) -> str:
 #     max_tokens = 200 
