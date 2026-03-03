@@ -65,14 +65,22 @@ async def summarize(request: Request, body: SummarizeRequest):
         raise HTTPException(502, "Could not fetch any article text to summarize")
 
     # 5) summarize each, then summarize the summaries (two-stage)
-    per_article_summaries = await asyncio.to_thread(
-        lambda: [summarize_long_text(t) for t in texts]
-    )
+    # per_article_summaries = await asyncio.to_thread(
+    #     lambda: [summarize_long_text(t) for t in texts]
+    # )
+    # combined = "\n".join(per_article_summaries)
+    # logging.info(f"combined: {combined}")
+    # final_summary = await asyncio.to_thread(lambda: summarize_text(combined))
+    # logging.info(f"final_summary: {final_summary}")
+    # return {"summary": final_summary, "sources": used_ids}
+    # 6) extractive summary
+    per_article_summaries: list[str] = []
+    for text in texts:
+        summary = extractive_summary(text, sentences=2)
+        per_article_summaries.append(summary)
     combined = "\n".join(per_article_summaries)
-    logging.info(f"combined: {combined}")
-    final_summary = await asyncio.to_thread(lambda: summarize_text(combined))
-    logging.info(f"final_summary: {final_summary}")
-    return {"summary": final_summary, "sources": used_ids}
+    final_summary = extractive_summary(combined, sentences=5)
+    return {"summary": final_summary, "sources": used_ids} 
 
 def summarize_long_text(text: str) -> str:
     max_tokens = 200 
@@ -111,3 +119,14 @@ def summarize_long_text(text: str) -> str:
     )
 
     return final[0]["summary_text"]
+
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.text_rank import TextRankSummarizer
+
+summarizer = TextRankSummarizer()
+
+def extractive_summary(text: str, sentences: int = 5) -> str:
+    parser = PlaintextParser.from_string(text, Tokenizer("english"))
+    sents = summarizer(parser.document, sentences)
+    return " ".join(str(s) for s in sents)
