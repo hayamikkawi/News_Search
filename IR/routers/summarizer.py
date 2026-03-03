@@ -6,6 +6,7 @@ from common_utils.types import DocID
 import httpx
 from bs4 import BeautifulSoup
 from fastapi import APIRouter, HTTPException, Request
+import trafilatura
 from transformers import pipeline
 from pydantic import BaseModel
 
@@ -18,12 +19,16 @@ class SummarizeRequest(BaseModel):
 summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 tokenizer = summarizer.tokenizer
 
-def extract_text_basic(html: str) -> str:
-    soup = BeautifulSoup(html, "html.parser")
-    for tag in soup(["script", "style", "nav", "footer", "header"]):
-        tag.decompose()
-    text = " ".join(soup.get_text(" ").split())
-    return text
+# def extract_text_basic(html: str) -> str:
+#     soup = BeautifulSoup(html, "html.parser")
+#     for tag in soup(["script", "style", "nav", "footer", "header"]):
+#         tag.decompose()
+#     text = " ".join(soup.get_text(" ").split())
+#     return text
+
+def get_clean_text(url: str, html: str) -> str:
+    txt = trafilatura.extract(html, include_comments=False, include_tables=False)
+    return txt or ""
 
 async def fetch_url(client: httpx.AsyncClient, url: str) -> str:
     r = await client.get(url, timeout=8.0, follow_redirects=True, headers={"User-Agent": "ttds-bot/1.0"})
@@ -55,7 +60,7 @@ async def summarize(request: Request, body: SummarizeRequest):
     for doc_id, url, page in zip(ids, urls, pages):
         if isinstance(page, Exception):
             continue
-        text = extract_text_basic(page)
+        text = get_clean_text(url, page)
         logging.info(f"text: {text}")
         if len(text) > 200:
             texts.append(text)
@@ -77,6 +82,7 @@ async def summarize(request: Request, body: SummarizeRequest):
     per_article_summaries: list[str] = []
     for text in texts:
         summary = extractive_summary(text, sentences=2)
+        logging.info(f"summary: {summary}")
         per_article_summaries.append(summary)
     combined = "\n".join(per_article_summaries)
     final_summary = extractive_summary(combined, sentences=5)
