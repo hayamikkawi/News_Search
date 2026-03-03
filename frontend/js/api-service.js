@@ -191,20 +191,24 @@ class APIService {
   }
 
   /**
-   * Health check
-   * @returns {Promise<Object>} Health status
+   * Generate summary for selected result ids
+   * @param {Object} params - Summary request params
+   * @param {string} params.query - Query text
+   * @param {number[]} params.ids - Document ids
+   * @returns {Promise<Object>} Summary response
    */
-  async healthCheck() {
-    return this.client.get('/health');
+  async summarize(params = {}) {
+    const { query = '', ids = [] } = params;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new APIError('At least one document id is required for summary', 400, {});
+    }
+
+    return this.client.post('/summarize', {
+      query,
+      ids,
+    });
   }
 
-  /**
-   * Get index version
-   * @returns {Promise<Object>} Index version info
-   */
-  async getIndexVersion() {
-    return this.client.get('/index_version');
-  }
 }
 
 /**

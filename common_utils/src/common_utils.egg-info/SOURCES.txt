@@ -1,5 +1,7 @@
 pyproject.toml
 src/common_utils/__init__.py
+src/common_utils/index.py
+src/common_utils/ir_serializer.py
 src/common_utils/preprocessor.py
 src/common_utils/serializer.py
 src/common_utils/types.py

@@ -193,13 +193,10 @@ function renderArticleCard(article, delay = 0) {
       <h2 class="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug mb-4">
         <a href="${url}" target="_blank" rel="noopener">${title}</a>
       </h2>
-      <div class="flex items-center justify-between border-t border-slate-100 pt-3">
-        <a href="${url}" target="_blank" rel="noopener"
-           class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
-          Read Article
-          <span class="iconify w-4 h-4" data-icon="heroicons:arrow-right"></span>
-        </a>
-        <span class="text-[10px] text-slate-300">#${article.id || ''}</span>
+      <div class="border-t border-slate-100 pt-3">
+        <p class="text-[11px] text-slate-500 break-all">
+          ${escapeHtml(url)}
+        </p>
       </div>
     </div>
   `;

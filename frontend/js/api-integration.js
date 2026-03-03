@@ -318,6 +318,116 @@ function highlightKeywords(text, query) {
   return escaped;
 }
 
+async function summarizeCurrentResults(k = 3) {
+  if (!Array.isArray(_currentResultIds) || _currentResultIds.length === 0) {
+    throw new Error('No search results available to summarize');
+  }
+
+  const ids = _currentResultIds
+    .slice(0, Math.max(1, k))
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id));
+
+  if (ids.length === 0) {
+    throw new Error('No valid article ids found to summarize');
+  }
+
+  return apiService.summarize({
+    query: _currentQuery || '',
+    ids,
+  });
+}
+
+async function openResultSummaryModal(article) {
+  const overlay = document.getElementById('news-detail-overlay');
+  const content = overlay?.querySelector('.bg-white');
+  if (!overlay || !content) return;
+
+  const domain = extractDomain(article.url || '');
+  const displayDate = formatDate(article.time);
+
+  setElementText('detail-category', domain || 'Source');
+  setElementText('detail-title', article.headline || 'Untitled Article');
+  setElementText('detail-date', displayDate || 'Unknown date');
+  setElementText('detail-content', 'Loading article preview...');
+
+  const imageEl = document.getElementById('detail-image');
+  if (imageEl && imageEl.parentElement) {
+    imageEl.parentElement.classList.add('hidden');
+    imageEl.setAttribute('src', '');
+  }
+
+  const tagsEl = document.getElementById('detail-tags');
+  if (tagsEl) {
+    tagsEl.innerHTML = '';
+    tagsEl.classList.add('hidden');
+  }
+
+  const readLink = document.getElementById('detail-read-link');
+  if (readLink) {
+    readLink.setAttribute('href', article.url || '#');
+  }
+
+  overlay.classList.remove('opacity-0', 'pointer-events-none');
+  content.classList.remove('translate-y-8');
+
+  const docId = Number(article.id);
+  if (!Number.isFinite(docId)) {
+    setElementText('detail-content', 'Summary is unavailable for this item.');
+    return;
+  }
+
+  try {
+    const response = await apiService.summarize({
+      query: _currentQuery || '',
+      ids: [docId],
+    });
+    const summaryText = response?.summary || '';
+    if (summaryText.trim()) {
+      setElementText('detail-content', summaryText.trim());
+      return;
+    }
+  } catch (error) {
+    console.error('Failed to load article summary:', error);
+  }
+
+  const fallbackText =
+    article.description ||
+    article.snippet ||
+    article.summary ||
+    'No summary is available for this article yet.';
+  setElementText('detail-content', fallbackText);
+}
+
+function initNewsDetailOverlayHandlers() {
+  const overlay = document.getElementById('news-detail-overlay');
+  const content = overlay?.querySelector('.bg-white');
+  const closeBtn = document.getElementById('close-news-detail');
+  if (!overlay || !content || !closeBtn) return;
+  if (overlay.dataset.boundCloseHandlers) return;
+
+  const close = () => {
+    overlay.classList.add('opacity-0', 'pointer-events-none');
+    content.classList.add('translate-y-8');
+  };
+  closeBtn.addEventListener('click', close);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) close();
+  });
+  overlay.dataset.boundCloseHandlers = '1';
+}
+
+function bindResultSummaryModalHandlers(results) {
+  const buttons = document.querySelectorAll('.result-summary-btn');
+  buttons.forEach((button, idx) => {
+    const article = results[idx];
+    if (!article) return;
+    button.addEventListener('click', async () => {
+      await openResultSummaryModal(article);
+    });
+  });
+}
+
 /**
  * Render search results
  */
@@ -329,9 +439,14 @@ function renderResults(results) {
   }
   
   if (!results || results.length === 0) {
+    _currentResultIds = [];
     resultsContainer.innerHTML = '<div class="text-center py-12 text-slate-500">No results found</div>';
     return;
   }
+
+  _currentResultIds = results
+    .map((article) => Number(article.id))
+    .filter((id) => Number.isFinite(id));
 
   const html = results.map((article, index) => {
     const domain = extractDomain(article.url || '');
@@ -370,12 +485,22 @@ function renderResults(results) {
               ? `<p class="mt-2 text-sm text-slate-600 leading-relaxed">${highlightedSnippet}</p>`
               : ''
           }
+          <p class="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500 break-all">
+            ${escapeHtml(url)}
+          </p>
+          <div class="mt-2 flex justify-end">
+            <button type="button" class="result-summary-btn px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors">
+              View Summary
+            </button>
+          </div>
         </div>
       </article>
     `;
   }).join('');
   
   resultsContainer.innerHTML = html;
+  initNewsDetailOverlayHandlers();
+  bindResultSummaryModalHandlers(results);
 }
 
 // ========================================
@@ -387,6 +512,7 @@ let _currentQueryType = 'FreeText';
 let _currentFilters = {};
 let _currentPage = 1;
 let _totalResults = 0;
+let _currentResultIds = [];
 
 /**
  * Get the current search state (query + type). Used by app.js for filter re-runs.
@@ -516,8 +642,12 @@ async function _performSearchInternal(query, queryType, filters = {}) {
 
     // Render results
     if (response.results && response.results.length > 0) {
+      _currentResultIds = response.results
+        .map((article) => Number(article.id))
+        .filter((id) => Number.isFinite(id));
       renderResults(response.results);
     } else {
+      _currentResultIds = [];
       showEmptyResults(query);
     }
 
@@ -574,6 +704,7 @@ function renderHomeFeed(articles) {
   const countEl   = document.getElementById('results-count');
   const pagination = document.getElementById('pagination-container');
   if (!container) return;
+  _currentResultIds = [];
 
   // Expand layout to col-span-9
   setHomeFeedLayout(true);
