@@ -9,6 +9,16 @@ from fastapi import APIRouter, HTTPException, Request
 import trafilatura
 from transformers import pipeline
 from pydantic import BaseModel
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.text_rank import TextRankSummarizer
+
+extractor = TextRankSummarizer()
+
+def extractive_summary(text: str, sentences: int = 5) -> str:
+    parser = PlaintextParser.from_string(text, Tokenizer("english"))
+    sents = extractor(parser.document, sentences)
+    return " ".join(str(s) for s in sents)
 
 router = APIRouter()
 
@@ -89,51 +99,40 @@ async def summarize(request: Request, body: SummarizeRequest):
     # final_summary = extractive_summary(combined, sentences=5)
     return {"summary": final_summary, "sources": used_ids} 
 
-def summarize_long_text(text: str) -> str:
-    max_tokens = 200 
+# def summarize_long_text(text: str) -> str:
+#     max_tokens = 200 
 
-    # tokenize once
-    tokens = tokenizer.encode(text, truncation=False)
+#     # tokenize once
+#     tokens = tokenizer.encode(text, truncation=False)
 
-    # split tokens into chunks
-    chunks = [
-        tokens[i:i+max_tokens]
-        for i in range(0, len(tokens), max_tokens)
-    ]
-    logging.info(f"text has {len(chunks)} chunks")
-    chunks = chunks[:1]
+#     # split tokens into chunks
+#     chunks = [
+#         tokens[i:i+max_tokens]
+#         for i in range(0, len(tokens), max_tokens)
+#     ]
+#     logging.info(f"text has {len(chunks)} chunks")
+#     chunks = chunks[:1]
 
-    summaries = []
+#     summaries = []
 
-    for chunk in chunks:
-        chunk_text = tokenizer.decode(chunk, skip_special_tokens=True)
+#     for chunk in chunks:
+#         chunk_text = tokenizer.decode(chunk, skip_special_tokens=True)
 
-        out = summarizer(
-            chunk_text,
-            max_length=80,
-            min_length=20,
-            do_sample=False,
-        )
-        summaries.append(out[0]["summary_text"])
+#         out = summarizer(
+#             chunk_text,
+#             max_length=80,
+#             min_length=20,
+#             do_sample=False,
+#         )
+#         summaries.append(out[0]["summary_text"])
 
-    combined = " ".join(summaries)
+#     combined = " ".join(summaries)
 
-    final = summarizer(
-        combined,
-        max_length=140,
-        min_length=60,
-        do_sample=False,
-    )
+#     final = summarizer(
+#         combined,
+#         max_length=140,
+#         min_length=60,
+#         do_sample=False,
+#     )
 
-    return final[0]["summary_text"]
-
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.text_rank import TextRankSummarizer
-
-summarizer = TextRankSummarizer()
-
-def extractive_summary(text: str, sentences: int = 5) -> str:
-    parser = PlaintextParser.from_string(text, Tokenizer("english"))
-    sents = summarizer(parser.document, sentences)
-    return " ".join(str(s) for s in sents)
+#     return final[0]["summary_text"]
