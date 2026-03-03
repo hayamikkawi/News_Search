@@ -338,8 +338,15 @@ function renderResults(results) {
     const formattedDate = formatDate(article.time);
     const headline = article.headline || 'Untitled Article';
     const url = article.url || '#';
-    const id = article.id || index;
+    const rawSnippet =
+      article.snippet ||
+      article.summary ||
+      article.description ||
+      article.content ||
+      '';
+    const snippet = truncateText(rawSnippet, 180);
     const highlightedHeadline = highlightKeywords(headline, _currentQuery);
+    const highlightedSnippet = highlightKeywords(snippet, _currentQuery);
     
     return `
       <article class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 group">
@@ -358,6 +365,11 @@ function renderResults(results) {
               ${highlightedHeadline}
             </a>
           </h3>
+          ${
+            snippet
+              ? `<p class="mt-2 text-sm text-slate-600 leading-relaxed">${highlightedSnippet}</p>`
+              : ''
+          }
         </div>
       </article>
     `;
@@ -475,7 +487,7 @@ async function _performSearchInternal(query, queryType, filters = {}) {
     const searchParams = {
       query: query.trim(),
       query_type: queryType,
-      limit: filters.limit || 20,
+      limit: filters.limit || PAGE_SIZE,
       offset: filters.offset || 0,
     };
 
