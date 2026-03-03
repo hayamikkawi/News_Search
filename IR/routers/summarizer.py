@@ -86,7 +86,7 @@ def summarize_long_text(text: str) -> str:
         for i in range(0, len(tokens), max_tokens)
     ]
     logging.info(f"text has {len(chunks)} chunks")
-    chunks = chunks[:2]
+    chunks = chunks[:1]
 
     summaries = []
 
