@@ -91,7 +91,7 @@ async def summarize(request: Request, body: SummarizeRequest):
     # 6) extractive summary
     per_article_extracted: list[str] = []
     for text in texts:
-        summary = extractive_summary(text, sentences=2)
+        summary = extractive_summary(text, sentences=5)
         logging.info(f"summary: {summary}")
         per_article_extracted.append(summary)
     per_article_summary: list[str] = []
