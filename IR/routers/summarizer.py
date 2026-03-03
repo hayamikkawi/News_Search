@@ -38,7 +38,7 @@ async def fetch_url(client: httpx.AsyncClient, url: str) -> str:
 def summarize_text(text: str) -> str:
     # keep input bounded
     text = text[:8000]
-    out = summarizer(text, max_length=140, min_length=60, do_sample=False)
+    out = summarizer(text, max_length=200, min_length=60, do_sample=False)
     return out[0]["summary_text"]
 
 @router.post("/summarize")
@@ -85,7 +85,8 @@ async def summarize(request: Request, body: SummarizeRequest):
         logging.info(f"summary: {summary}")
         per_article_summaries.append(summary)
     combined = "\n".join(per_article_summaries)
-    final_summary = extractive_summary(combined, sentences=5)
+    final_summary = await asyncio.to_thread(lambda: summarize_text(combined))
+    # final_summary = extractive_summary(combined, sentences=5)
     return {"summary": final_summary, "sources": used_ids} 
 
 def summarize_long_text(text: str) -> str:
