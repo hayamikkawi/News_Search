@@ -30,18 +30,22 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
 try:
-    from src.config import MYSQL_CONFIG
+    from src.config import MYSQL_CONFIG, CONFIG
     from src.storage.db_mysql import create_mysql_db
     from src.integration.indexer_interface import FileBasedIndexer
     from src.integration.coordinator import create_coordinator, CrawlerCoordinator
     from src.core.models import ArticleRecord
+    from src.core.fetcher import build_session, fetch_html
+    from src.core.extractor import extract_main_text
 except ImportError as e:
     try:
-        from config import MYSQL_CONFIG
+        from config import MYSQL_CONFIG, CONFIG
         from storage.db_mysql import create_mysql_db
         from integration.indexer_interface import FileBasedIndexer
         from integration.coordinator import create_coordinator, CrawlerCoordinator
         from core.models import ArticleRecord
+        from core.fetcher import build_session, fetch_html
+        from core.extractor import extract_main_text
     except ImportError:
         print(f"Error importing crawler modules: {e}")
         print("Make sure you're running from the correct directory and the crawler module is available")
@@ -405,12 +409,262 @@ class JSONStreamProcessor:
                 )
 
 
+class DBIncrementalExporter:
+    """Export non-CommonCrawl articles from DB in incremental files for indexer format."""
+
+    def __init__(
+        self,
+        coordinator: CrawlerCoordinator,
+        state_file: Path,
+        failed_output_path: Optional[Path],
+        repair_null_text: bool = True,
+        repair_min_text_length: int = 400,
+    ):
+        self.coordinator = coordinator
+        self.state_file = state_file
+        self.failed_output_path = failed_output_path
+        self.repair_null_text = repair_null_text
+        self.repair_min_text_length = repair_min_text_length
+        self.failed_records_written = 0
+        self.session = build_session()
+
+    def _write_failed_record(self, payload: Dict[str, Any]) -> None:
+        if not self.failed_output_path:
+            return
+        self.failed_output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.failed_output_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+        self.failed_records_written += 1
+
+    def _read_last_exported_id(self) -> int:
+        if not self.state_file.exists():
+            return 0
+        try:
+            with open(self.state_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            value = int(data.get("last_exported_id", 0))
+            return max(0, value)
+        except Exception as e:
+            logger.warning(f"Failed to read state file {self.state_file}, fallback to 0: {e}")
+            return 0
+
+    def _write_last_exported_id(self, value: int) -> None:
+        self.state_file.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "last_exported_id": int(value),
+            "updated_at": datetime.now().isoformat(),
+        }
+        with open(self.state_file, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+
+    def _get_max_incremental_id(self, last_exported_id: int) -> int:
+        with self.coordinator.database.get_connection() as conn:
+            cursor = conn.cursor()
+            try:
+                cursor.execute(
+                    """
+                    SELECT MAX(id)
+                    FROM articles
+                    WHERE id > %s
+                      AND (feed_url IS NULL OR feed_url <> %s)
+                    """,
+                    (last_exported_id, COMMONCRAWL_FEED_URL),
+                )
+                row = cursor.fetchone()
+                return int(row[0]) if row and row[0] else 0
+            finally:
+                cursor.close()
+
+    def _get_rows_with_null_text(self, last_exported_id: int, max_id: int) -> List[Dict[str, Any]]:
+        with self.coordinator.database.get_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            try:
+                cursor.execute(
+                    """
+                    SELECT id, url, final_url
+                    FROM articles
+                    WHERE id > %s AND id <= %s
+                      AND (feed_url IS NULL OR feed_url <> %s)
+                      AND text_content IS NULL
+                    ORDER BY id ASC
+                    """,
+                    (last_exported_id, max_id, COMMONCRAWL_FEED_URL),
+                )
+                return cursor.fetchall()
+            finally:
+                cursor.close()
+
+    def _get_exportable_rows(self, last_exported_id: int, max_id: int) -> List[Dict[str, Any]]:
+        with self.coordinator.database.get_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            try:
+                cursor.execute(
+                    """
+                    SELECT id, title, text_content
+                    FROM articles
+                    WHERE id > %s AND id <= %s
+                      AND (feed_url IS NULL OR feed_url <> %s)
+                      AND text_content IS NOT NULL
+                      AND text_content <> ''
+                    ORDER BY id ASC
+                    """,
+                    (last_exported_id, max_id, COMMONCRAWL_FEED_URL),
+                )
+                return cursor.fetchall()
+            finally:
+                cursor.close()
+
+    def _repair_null_text_content(self, rows: List[Dict[str, Any]]) -> Tuple[int, int]:
+        repaired = 0
+        failed = 0
+        for row in rows:
+            doc_id = row["id"]
+            target_url = row.get("final_url") or row.get("url")
+
+            if not target_url:
+                failed += 1
+                self._write_failed_record(
+                    {
+                        "doc_id": doc_id,
+                        "url": row.get("url"),
+                        "final_url": row.get("final_url"),
+                        "stage": "repair_null_text_content",
+                        "error": "Both final_url and url are empty",
+                    }
+                )
+                continue
+
+            try:
+                fetch = fetch_html(
+                    session=self.session,
+                    url=target_url,
+                    user_agent=CONFIG.user_agent,
+                    timeout_seconds=CONFIG.timeout_seconds,
+                )
+                if not fetch.ok or not fetch.html:
+                    failed += 1
+                    self._write_failed_record(
+                        {
+                            "doc_id": doc_id,
+                            "url": row.get("url"),
+                            "final_url": row.get("final_url"),
+                            "stage": "repair_null_text_content.fetch",
+                            "error": fetch.error or f"http_status={fetch.status}",
+                        }
+                    )
+                    continue
+
+                extracted = extract_main_text(
+                    fetch.html,
+                    fetch.final_url or target_url,
+                    min_text_length=self.repair_min_text_length,
+                )
+                text = extracted.text if extracted and extracted.text_ok else None
+                if not text:
+                    failed += 1
+                    self._write_failed_record(
+                        {
+                            "doc_id": doc_id,
+                            "url": row.get("url"),
+                            "final_url": row.get("final_url"),
+                            "stage": "repair_null_text_content.extract",
+                            "error": "extract_too_short_or_empty",
+                        }
+                    )
+                    continue
+
+                if self.coordinator.database.update_article_content(doc_id, text):
+                    repaired += 1
+                else:
+                    failed += 1
+                    self._write_failed_record(
+                        {
+                            "doc_id": doc_id,
+                            "url": row.get("url"),
+                            "final_url": row.get("final_url"),
+                            "stage": "repair_null_text_content.update",
+                            "error": "update_article_content_failed",
+                        }
+                    )
+            except Exception as e:
+                failed += 1
+                self._write_failed_record(
+                    {
+                        "doc_id": doc_id,
+                        "url": row.get("url"),
+                        "final_url": row.get("final_url"),
+                        "stage": "repair_null_text_content.exception",
+                        "error": str(e),
+                    }
+                )
+
+        return repaired, failed
+
+    def run(self) -> bool:
+        last_exported_id = self._read_last_exported_id()
+        logger.info(f"DB incremental export starts from last_exported_id={last_exported_id}")
+
+        max_id = self._get_max_incremental_id(last_exported_id)
+        if max_id <= last_exported_id:
+            logger.info("No new non-commoncrawl rows to export")
+            return True
+
+        logger.info(f"Detected incremental id range: ({last_exported_id}, {max_id}]")
+
+        if self.repair_null_text:
+            null_rows = self._get_rows_with_null_text(last_exported_id, max_id)
+            logger.info(f"Rows with NULL text_content in incremental range: {len(null_rows)}")
+            repaired, failed = self._repair_null_text_content(null_rows)
+            logger.info(
+                f"NULL text_content repair done: repaired={repaired}, failed={failed}, "
+                f"failed_records_written={self.failed_records_written}"
+            )
+
+        rows = self._get_exportable_rows(last_exported_id, max_id)
+        logger.info(f"Exportable rows in incremental range: {len(rows)}")
+
+        for row in rows:
+            doc_id = int(row["id"])
+            content = row.get("text_content") or ""
+            metadata = {
+                "title": row.get("title") or "",
+                "description": None,
+            }
+            ok = self.coordinator.indexer.send_document(doc_id=doc_id, content=content, metadata=metadata)
+            if not ok:
+                self._write_failed_record(
+                    {
+                        "doc_id": doc_id,
+                        "stage": "db_incremental_export.send_document",
+                        "error": "send_document_failed",
+                    }
+                )
+
+        if rows:
+            flush_ok = self.coordinator.indexer.flush(mode="new_file")
+            if not flush_ok:
+                logger.error("Failed to flush incremental docs file")
+                return False
+            logger.info(f"Incremental docs file created for {len(rows)} rows")
+        else:
+            logger.info("No exportable rows (all missing/empty text_content after repair)")
+
+        self._write_last_exported_id(max_id)
+        logger.info(f"State updated: last_exported_id={max_id}")
+        return True
+
+
 def main():
     parser = argparse.ArgumentParser(description="Import JSON data using crawler coordinator")
 
-    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group = parser.add_mutually_exclusive_group(required=False)
     source_group.add_argument("--input", "-i", help="Path to input JSON array file")
     source_group.add_argument("--retry-failed", help="Path to failed JSONL file to retry")
+    source_group.add_argument(
+        "--export-from-db",
+        action="store_true",
+        help="Export incremental non-commoncrawl rows from DB in indexer format",
+    )
 
     parser.add_argument("--batch-size", "-b", type=int, default=1000, help="Batch size for processing")
     parser.add_argument("--skip-existing", action="store_true", help="Skip rows already existing in DB")
@@ -424,12 +678,39 @@ def main():
         default="./output/import_failed_records.jsonl",
         help="JSONL path for failed records",
     )
+    parser.add_argument(
+        "--state-file",
+        default="./output/export_state.json",
+        help="State file path for DB incremental export",
+    )
+    parser.add_argument(
+        "--repair-null-text",
+        dest="repair_null_text",
+        action="store_true",
+        help="Repair NULL text_content in DB incremental rows before export",
+    )
+    parser.add_argument(
+        "--no-repair-null-text",
+        dest="repair_null_text",
+        action="store_false",
+        help="Do not repair NULL text_content before export",
+    )
+    parser.add_argument(
+        "--repair-min-text-length",
+        type=int,
+        default=CONFIG.min_text_length,
+        help="Minimum extracted text length for NULL text_content repair",
+    )
     parser.set_defaults(save_content=True)
+    parser.set_defaults(repair_null_text=True)
 
     args = parser.parse_args()
 
     input_file: Optional[Path] = None
     retry_failed_file: Optional[Path] = None
+    mode_count = int(bool(args.input)) + int(bool(args.retry_failed)) + int(bool(args.export_from_db))
+    if mode_count != 1:
+        parser.error("Exactly one of --input, --retry-failed, or --export-from-db is required")
 
     if args.input:
         input_file = Path(args.input)
@@ -442,6 +723,10 @@ def main():
         if not retry_failed_file.exists():
             logger.error(f"Retry-failed file not found: {retry_failed_file}")
             sys.exit(1)
+
+    if args.export_from_db and args.dry_run:
+        logger.error("--dry-run is not supported with --export-from-db")
+        sys.exit(1)
 
     logger.info("Initializing components...")
 
@@ -484,16 +769,25 @@ def main():
     if failed_output_path.exists() and (retry_failed_file is None or failed_output_path != retry_failed_file):
         failed_output_path.unlink()
 
-    processor = JSONStreamProcessor(
-        coordinator=coordinator,
-        batch_size=args.batch_size,
-        dry_run=args.dry_run,
-        save_content_to_db=args.save_content,
-        failed_output_path=failed_output_path,
-        skip_existing=args.skip_existing,
-    )
-
-    success = processor.process_file(input_file=input_file, retry_failed_file=retry_failed_file)
+    if args.export_from_db:
+        exporter = DBIncrementalExporter(
+            coordinator=coordinator,
+            state_file=Path(args.state_file),
+            failed_output_path=failed_output_path,
+            repair_null_text=args.repair_null_text,
+            repair_min_text_length=args.repair_min_text_length,
+        )
+        success = exporter.run()
+    else:
+        processor = JSONStreamProcessor(
+            coordinator=coordinator,
+            batch_size=args.batch_size,
+            dry_run=args.dry_run,
+            save_content_to_db=args.save_content,
+            failed_output_path=failed_output_path,
+            skip_existing=args.skip_existing,
+        )
+        success = processor.process_file(input_file=input_file, retry_failed_file=retry_failed_file)
 
     if success:
         logger.info("Import completed successfully")
