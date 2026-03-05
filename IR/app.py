@@ -188,3 +188,22 @@ def latest(limit: int = Query(10, ge=1, le=50),):
     except Exception as e: 
         logger.exception(f"Fetching latest news failed, {e}")
         raise HTTPException(status_code=500, detail="Internal search error")
+
+
+@app.get("/article/content")
+def article_content(id: int = Query(..., ge=1)):
+    store = app.state.store
+    if not store:
+        logger.exception("Service not ready")
+        raise HTTPException(status_code=503, detail="Service not ready")
+
+    try:
+        row = store.fetch_content_by_id(id)
+    except Exception as e:
+        logger.exception(f"Fetching article content failed, {e}")
+        raise HTTPException(status_code=500, detail="Internal search error")
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    return row
