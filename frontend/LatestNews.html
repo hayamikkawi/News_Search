@@ -70,7 +70,6 @@
   <div id="articles-container" class="space-y-4">
     <!-- Skeleton Loaders -->
     <div class="skeleton-loader space-y-4">
-      ${[1,2,3,4,5].map(() => `
       <div class="bg-white rounded-2xl border border-slate-100 p-5 animate-pulse">
         <div class="flex items-center gap-3 mb-3">
           <div class="h-4 w-24 bg-slate-200 rounded-full"></div>
@@ -78,7 +77,39 @@
         </div>
         <div class="h-5 w-3/4 bg-slate-200 rounded mb-2"></div>
         <div class="h-4 w-1/2 bg-slate-100 rounded"></div>
-      </div>`).join('')}
+      </div>
+      <div class="bg-white rounded-2xl border border-slate-100 p-5 animate-pulse">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="h-4 w-24 bg-slate-200 rounded-full"></div>
+          <div class="h-4 w-16 bg-slate-100 rounded-full"></div>
+        </div>
+        <div class="h-5 w-3/4 bg-slate-200 rounded mb-2"></div>
+        <div class="h-4 w-1/2 bg-slate-100 rounded"></div>
+      </div>
+      <div class="bg-white rounded-2xl border border-slate-100 p-5 animate-pulse">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="h-4 w-24 bg-slate-200 rounded-full"></div>
+          <div class="h-4 w-16 bg-slate-100 rounded-full"></div>
+        </div>
+        <div class="h-5 w-3/4 bg-slate-200 rounded mb-2"></div>
+        <div class="h-4 w-1/2 bg-slate-100 rounded"></div>
+      </div>
+      <div class="bg-white rounded-2xl border border-slate-100 p-5 animate-pulse">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="h-4 w-24 bg-slate-200 rounded-full"></div>
+          <div class="h-4 w-16 bg-slate-100 rounded-full"></div>
+        </div>
+        <div class="h-5 w-3/4 bg-slate-200 rounded mb-2"></div>
+        <div class="h-4 w-1/2 bg-slate-100 rounded"></div>
+      </div>
+      <div class="bg-white rounded-2xl border border-slate-100 p-5 animate-pulse">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="h-4 w-24 bg-slate-200 rounded-full"></div>
+          <div class="h-4 w-16 bg-slate-100 rounded-full"></div>
+        </div>
+        <div class="h-5 w-3/4 bg-slate-200 rounded mb-2"></div>
+        <div class="h-4 w-1/2 bg-slate-100 rounded"></div>
+      </div>
     </div>
   </div>
 
@@ -162,13 +193,10 @@ function renderArticleCard(article, delay = 0) {
       <h2 class="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug mb-4">
         <a href="${url}" target="_blank" rel="noopener">${title}</a>
       </h2>
-      <div class="flex items-center justify-between border-t border-slate-100 pt-3">
-        <a href="${url}" target="_blank" rel="noopener"
-           class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
-          Read Article
-          <span class="iconify w-4 h-4" data-icon="heroicons:arrow-right"></span>
-        </a>
-        <span class="text-[10px] text-slate-300">#${article.id || ''}</span>
+      <div class="border-t border-slate-100 pt-3">
+        <p class="text-[11px] text-slate-500 break-all">
+          ${escapeHtml(url)}
+        </p>
       </div>
     </div>
   `;

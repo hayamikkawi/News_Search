@@ -8,18 +8,17 @@
 <title>GlobalSearch - News Search Engine</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 italic-none">
 <!-- Header -->
 <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 flex items-center justify-between">
-<div class="flex items-center space-x-2">
+<button type="button" class="flex items-center space-x-2" onclick="window.location.reload()" title="Refresh page" aria-label="Refresh page">
 <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg">
 <span class="iconify w-6 h-6" data-icon="heroicons:globe-alt-20-solid"></span>
 </div>
 <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 tracking-tight">GlobalSearch</span>
-</div>
+</button>
 
 
 </header>
@@ -106,7 +105,6 @@ Reset
 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
 <div class="flex items-center justify-between mb-6">
 <h3 class="font-bold text-slate-900">Refined Filters</h3>
-<button class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">Reset</button>
 </div>
 <div class="space-y-6">
 <!-- Date Filter -->
@@ -171,7 +169,7 @@ Loading latest news...
 <button class="group relative flex items-center justify-center w-16 h-16 bg-indigo-600 text-white rounded-full shadow-2xl hover:scale-110 transition-transform focus:outline-none" id="summary-btn">
 <span class="iconify w-8 h-8" data-icon="heroicons:sparkles-solid"></span>
 <div class="absolute -top-12 right-0 hidden group-hover:block bg-slate-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap">
-        Summarize all viewpoints on this page
+        Summarize top 3 results on this page
       </div>
 </button>
 </div>
@@ -188,29 +186,15 @@ Loading latest news...
 <span class="iconify w-6 h-6" data-icon="heroicons:x-mark"></span>
 </button>
 </div>
-<div class="w-full h-48 border border-slate-50 rounded-2xl bg-slate-50" id="summary-chart"></div>
 <div class="space-y-4">
 <div class="flex space-x-4">
 <div class="w-1 bg-indigo-500 rounded-full"></div>
-<p class="text-slate-600 leading-relaxed">
+<p class="text-slate-600 leading-relaxed whitespace-pre-line" id="summary-output">
               Based on your current search "2026 Sustainable Energy", GlobalSearch has identified 3 core trends: <b>Strengthened Cross-border Collaboration</b>, <b>Ultra-Low Loss Transmission Technology Breakthrough</b>, and <b>Private Investment Surge Under Policy Guidance</b>.
             </p>
 </div>
-<div class="grid grid-cols-2 gap-4">
-<div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-<span class="text-[10px] font-bold text-emerald-600 block mb-1">Key Advantages</span>
-<p class="text-xs text-slate-700 font-semibold line-clamp-2">The Nordic superconductor project sets a benchmark for global energy interconnection with high replication value.</p>
+<p class="text-xs text-slate-500" id="summary-meta"></p>
 </div>
-<div class="p-4 bg-amber-50 rounded-2xl border border-amber-100">
-<span class="text-[10px] font-bold text-amber-600 block mb-1">Potential Obstacles</span>
-<p class="text-xs text-slate-700 font-semibold line-clamp-2">The high cost of quantum technology proliferation remains a barrier for developing countries.</p>
-</div>
-</div>
-</div>
-<button class="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center space-x-2 active:scale-95 transition-transform">
-<span class="iconify w-5 h-5" data-icon="heroicons:newspaper"></span>
-<span>Export Full Analysis Report (PDF)</span>
-</button>
 </div>
 </div>
 </div>
@@ -225,11 +209,6 @@ Loading latest news...
 <h1 class="text-3xl font-black text-slate-900 mt-3 leading-tight" id="detail-title">News Title</h1>
 <div class="flex items-center space-x-4 mt-3 text-sm text-slate-500">
 <span id="detail-date">Date</span>
-<span>•</span>
-<span class="flex items-center">
-<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:clock"></span>
-5 min read
-</span>
 </div>
 </div>
 <button class="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" id="close-news-detail">
@@ -251,17 +230,6 @@ Article content will be displayed here...
 </p>
 </div>
 
-<!-- Key Points -->
-<div class="bg-indigo-50 border-l-4 border-indigo-500 p-6 rounded-r-xl space-y-3">
-<h3 class="font-bold text-indigo-900 flex items-center">
-<span class="iconify w-5 h-5 mr-2" data-icon="heroicons:light-bulb"></span>
-Key Takeaways
-</h3>
-<ul class="space-y-2 text-sm text-slate-700" id="detail-keypoints">
-<li>• Key point will be displayed here</li>
-</ul>
-</div>
-
 <!-- Tags -->
 <div class="flex flex-wrap gap-2" id="detail-tags">
 <span class="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">#Technology</span>
@@ -269,9 +237,9 @@ Key Takeaways
 
 <!-- Actions -->
 <div class="flex items-center justify-end pt-6 border-t border-slate-100">
-<button class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-colors">
+<a class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-colors inline-flex items-center" id="detail-read-link" href="#" target="_blank" rel="noopener">
 Read Full Article →
-</button>
+</a>
 </div>
 </div>
 </div>

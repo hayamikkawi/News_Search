@@ -13,186 +13,53 @@ function initSummaryModal() {
   const modalOverlay = document.getElementById('modal-overlay');
   const closeModal = document.getElementById('close-modal');
   const modalContent = modalOverlay?.querySelector('.bg-white');
+  const summaryText = document.getElementById('summary-output');
+  const summaryMeta = document.getElementById('summary-meta');
 
   if (!summaryBtn || !modalOverlay || !closeModal || !modalContent) {
     console.warn('Summary modal elements not found');
     return;
   }
 
-  summaryBtn.onclick = () => {
+  summaryBtn.onclick = async () => {
     modalOverlay.classList.remove('opacity-0', 'pointer-events-none');
     modalContent.classList.remove('translate-y-8');
-    initModalChart();
+
+    if (summaryText) {
+      summaryText.textContent = 'Generating summary from top results...';
+    }
+    if (summaryMeta) {
+      summaryMeta.textContent = '';
+    }
+
+    if (typeof summarizeCurrentResults !== 'function') {
+      if (summaryText) {
+        summaryText.textContent = 'Summary service is not available on this page.';
+      }
+      return;
+    }
+
+    try {
+      const response = await summarizeCurrentResults(3);
+      if (summaryText) {
+        summaryText.textContent = response.summary || 'No summary returned.';
+      }
+      if (summaryMeta) {
+        const sourceCount = Array.isArray(response.sources) ? response.sources.length : 0;
+        summaryMeta.textContent = `Based on ${sourceCount} source article${sourceCount === 1 ? '' : 's'}.`;
+      }
+    } catch (error) {
+      console.error('Summary generation failed:', error);
+      if (summaryText) {
+        summaryText.textContent = `Failed to generate summary: ${error?.message || 'Unknown error'}`;
+      }
+    }
   };
 
   closeModal.onclick = () => {
     modalOverlay.classList.add('opacity-0', 'pointer-events-none');
     modalContent.classList.add('translate-y-8');
   };
-}
-
-/**
- * Initialize and manage the news detail modal
- */
-function initNewsDetailModal() {
-  const newsDetailOverlay = document.getElementById('news-detail-overlay');
-  const newsDetailContent = newsDetailOverlay?.querySelector('.bg-white');
-  const closeNewsDetail = document.getElementById('close-news-detail');
-  const newsTitles = document.querySelectorAll('.news-title');
-
-  if (!newsDetailOverlay || !newsDetailContent || !closeNewsDetail) {
-    console.warn('News detail modal elements not found');
-    return;
-  }
-
-  // Sample full content for each news
-  const newsContent = {
-    '1': {
-      content: `The International Energy Organization announced today that the superconducting grid project has successfully completed its first phase of grid connection in Northern Europe. This groundbreaking initiative represents a major breakthrough in clean energy transmission technology.
-      
-      The project utilizes advanced superconducting materials that allow electricity to flow with virtually zero resistance, reducing cross-border power transmission losses by an unprecedented 40%. This efficiency gain could save billions in energy costs annually while significantly reducing carbon emissions.
-      
-      Engineers working on the project report that the system has exceeded initial performance expectations. The superconducting cables, cooled to near absolute zero temperatures, have demonstrated remarkable stability even under peak load conditions.
-      
-      Over the next three years, the technology is expected to expand to other regions, potentially revolutionizing the global energy grid infrastructure. Energy ministers from 12 European nations have already expressed interest in adopting this technology.`,
-      keypoints: [
-        'First phase of superconducting grid successfully completed',
-        '40% reduction in cross-border power transmission losses',
-        'Near-zero resistance technology using advanced superconducting materials',
-        'Expansion to other regions planned over next 3 years',
-        '12 European nations interested in adopting the technology'
-      ]
-    },
-    '2': {
-      content: `IBM and Google's joint quantum computing laboratory has announced a major milestone: the Tianzhou quantum chip series has successfully completed 10,000 connectivity tests, bringing quantum computing significantly closer to practical commercialization.
-      
-      This achievement marks a turning point in the quantum computing industry. The Tianzhou chips demonstrate unprecedented stability and error correction capabilities, addressing one of the major obstacles to quantum computer deployment.
-      
-      Leading tech companies are now rushing to form specialized algorithm development teams. Traditional programming paradigms don't apply to quantum systems, requiring engineers to fundamentally rethink computational approaches.
-      
-      Industry experts predict that within 5 years, quantum computers could tackle problems currently impossible for classical computers, including drug discovery, climate modeling, and cryptography.`,
-      keypoints: [
-        '10,000 successful connectivity tests completed',
-        'Major advancement in quantum chip stability',
-        'Tech giants forming new algorithm development teams',
-        'Programmers must learn entirely new computational paradigms',
-        'Practical applications expected within 5 years'
-      ]
-    }
-  };
-
-  newsTitles.forEach(title => {
-    title.addEventListener('click', () => {
-      const id = title.dataset.id;
-      const data = newsContent[id] || { content: 'Full content not available yet.', keypoints: [] };
-
-      // Fill modal with data
-      setElementText('detail-category', title.dataset.category);
-      setElementText('detail-title', title.dataset.title);
-      setElementText('detail-date', title.dataset.date);
-      setElementAttribute('detail-image', 'src', title.dataset.image);
-      setElementText('detail-content', data.content);
-
-      // Fill key points
-      const keypointsContainer = document.getElementById('detail-keypoints');
-      if (keypointsContainer) {
-        keypointsContainer.innerHTML = data.keypoints.map(point => `<li>• ${point}</li>`).join('');
-      }
-
-      // Reset scroll position to top
-      const modalScrollContainer = newsDetailOverlay.querySelector('.overflow-y-auto');
-      if (modalScrollContainer) {
-        modalScrollContainer.scrollTop = 0;
-      }
-
-      // Show modal
-      newsDetailOverlay.classList.remove('opacity-0', 'pointer-events-none');
-      newsDetailContent.classList.remove('translate-y-8');
-    });
-  });
-
-  closeNewsDetail.onclick = () => {
-    newsDetailOverlay.classList.add('opacity-0', 'pointer-events-none');
-    newsDetailContent.classList.add('translate-y-8');
-  };
-
-  // Close on backdrop click
-  newsDetailOverlay.addEventListener('click', (e) => {
-    if (e.target === newsDetailOverlay) {
-      newsDetailOverlay.classList.add('opacity-0', 'pointer-events-none');
-      newsDetailContent.classList.add('translate-y-8');
-    }
-  });
-}
-
-// ============================================
-// Chart Initialization (ECharts)
-// ============================================
-
-/**
- * Initialize mini chart in sidebar
- */
-function initMiniChart() {
-  const chartDom = document.getElementById('mini-chart');
-  if (!chartDom) {
-    console.warn('mini-chart element not found');
-    return;
-  }
-  const myChart = echarts.init(chartDom);
-  const option = {
-    grid: { top: 0, bottom: 0, left: 0, right: 0 },
-    xAxis: { type: 'category', show: false },
-    yAxis: { show: false },
-    series: [{
-      data: [120, 200, 150, 80, 70, 110, 130, 280, 220, 290],
-      type: 'line',
-      smooth: true,
-      showSymbol: false,
-      areaStyle: { color: 'rgba(99, 102, 241, 0.3)' },
-      lineStyle: { width: 3, color: '#818cf8' }
-    }]
-  };
-  myChart.setOption(option);
-}
-
-/**
- * Initialize modal chart (radar chart)
- */
-function initModalChart() {
-  setTimeout(() => {
-    const chartDom = document.getElementById('summary-chart');
-    if (!chartDom) {
-      console.warn('summary-chart element not found');
-      return;
-    }
-    const myChart = echarts.init(chartDom);
-    const option = {
-      radar: {
-        indicator: [
-          { name: 'Positivity', max: 100 },
-          { name: 'Credibility', max: 100 },
-          { name: 'Virality', max: 100 },
-          { name: 'Complexity', max: 100 },
-          { name: 'Impact', max: 100 }
-        ],
-        splitArea: { show: false },
-        axisLine: { lineStyle: { color: '#e2e8f0' } }
-      },
-      series: [{
-        type: 'radar',
-        data: [
-          {
-            value: [85, 92, 78, 40, 88],
-            name: 'Current Topic Characteristics',
-            areaStyle: { color: 'rgba(79, 70, 229, 0.4)' },
-            lineStyle: { color: '#4f46e5' },
-            itemStyle: { color: '#4f46e5' }
-          }
-        ]
-      }]
-    };
-    myChart.setOption(option);
-  }, 300);
 }
 
 // ============================================
@@ -607,12 +474,8 @@ function setElementAttribute(id, attr, value) {
 function initApp() {
   console.log('GlobalSearch app initializing...');
 
-  // Initialize charts
-  initMiniChart();
-
   // Initialize modals
   initSummaryModal();
-  initNewsDetailModal();
 
   // Initialize filters
   initDateFilter();
