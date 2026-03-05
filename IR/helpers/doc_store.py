@@ -120,3 +120,18 @@ class DocStore:
         id_to_url = {int(r["id"]): r["url"] for r in rows}        
         cur.close()
         return [id_to_url.get(i) for i in ids]
+
+    def fetch_content_by_id(self, doc_id: int) -> Optional[Dict[str, Any]]:
+        sql = """
+            SELECT
+              id,
+              COALESCE(text_content, '') AS content
+            FROM articles
+            WHERE id = %s
+            LIMIT 1
+        """
+        cur = self.cursor()
+        cur.execute(sql, (doc_id,))
+        row = cur.fetchone()
+        cur.close()
+        return row

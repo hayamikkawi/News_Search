@@ -353,17 +353,88 @@ function renderResults(results) {
           </div>
           
           <!-- Title -->
-          <h3 class="text-base font-bold text-slate-900 mb-0 group-hover:text-indigo-600 transition-colors leading-snug">
-            <a href="${url}" target="_blank" rel="noopener" class="news-title-link">
-              ${highlightedHeadline}
-            </a>
-          </h3>
+          <div class="flex items-start justify-between gap-3">
+            <h3 class="text-base font-bold text-slate-900 mb-0 group-hover:text-indigo-600 transition-colors leading-snug flex-1">
+              <a href="${url}" target="_blank" rel="noopener" class="news-title-link">
+                ${highlightedHeadline}
+              </a>
+            </h3>
+            <button
+              class="view-content-btn shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
+              data-id="${id}"
+              type="button"
+            >
+              View Content
+            </button>
+          </div>
         </div>
       </article>
     `;
   }).join('');
   
   resultsContainer.innerHTML = html;
+}
+
+function openNewsDetailModal({ title, date, content }) {
+  const newsDetailOverlay = document.getElementById('news-detail-overlay');
+  const newsDetailContent = newsDetailOverlay?.querySelector('.bg-white');
+  if (!newsDetailOverlay || !newsDetailContent) return;
+
+  const categoryEl = document.getElementById('detail-category');
+  if (categoryEl) categoryEl.textContent = 'Article';
+  const titleEl = document.getElementById('detail-title');
+  if (titleEl) titleEl.textContent = title || 'Untitled Article';
+  const dateEl = document.getElementById('detail-date');
+  if (dateEl) dateEl.textContent = date || 'Unknown date';
+  const contentEl = document.getElementById('detail-content');
+  if (contentEl) contentEl.textContent = content || 'No content available.';
+  const imageEl = document.getElementById('detail-image');
+  if (imageEl) imageEl.setAttribute('src', '');
+  const keypointsContainer = document.getElementById('detail-keypoints');
+  if (keypointsContainer) keypointsContainer.innerHTML = '<li>• Full article content loaded from database.</li>';
+
+  const modalScrollContainer = newsDetailOverlay.querySelector('.overflow-y-auto');
+  if (modalScrollContainer) modalScrollContainer.scrollTop = 0;
+
+  newsDetailOverlay.classList.remove('opacity-0', 'pointer-events-none');
+  newsDetailContent.classList.remove('translate-y-8');
+}
+
+function bindArticleContentButtons() {
+  const resultsContainer = document.getElementById('search-results-container');
+  if (!resultsContainer || resultsContainer.dataset.boundContentButtons) return;
+
+  resultsContainer.addEventListener('click', async (e) => {
+    const button = e.target.closest('.view-content-btn');
+    if (!button) return;
+
+    const articleId = button.dataset.id;
+    if (!articleId) return;
+
+    const articleCard = button.closest('article');
+    const titleText = articleCard?.querySelector('.news-title-link')?.textContent?.trim() || 'Untitled Article';
+    const dateText = articleCard?.querySelector('.text-slate-400')?.textContent?.trim() || 'Unknown date';
+    const originalText = button.textContent;
+
+    try {
+      button.disabled = true;
+      button.textContent = 'Loading...';
+      const response = await apiService.getArticleContent(articleId);
+      openNewsDetailModal({
+        title: titleText,
+        date: dateText,
+        content: response.content || 'No content available.',
+      });
+    } catch (error) {
+      console.error('Failed to load article content:', error);
+      showError(error instanceof APIError ? error.message : 'Failed to load article content.');
+    } finally {
+      button.disabled = false;
+      button.textContent = originalText || 'View Content';
+    }
+  });
+
+  resultsContainer.dataset.boundContentButtons = '1';
 }
 
 // ========================================
@@ -683,6 +754,8 @@ function getActiveDateFilter() {
  * Initialize search button handlers with API integration
  */
 function initSearchWithAPI() {
+  bindArticleContentButtons();
+
   // Free text search
   const freetextSearchBtn = document.querySelector('#freetext-search button');
   const searchInput = document.getElementById('search-input');

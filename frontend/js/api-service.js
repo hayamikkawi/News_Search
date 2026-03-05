@@ -191,6 +191,15 @@ class APIService {
   }
 
   /**
+   * Get full content for a specific article
+   * @param {number|string} id - Article ID
+   * @returns {Promise<Object>} Article content payload
+   */
+  async getArticleContent(id) {
+    return this.client.get('/article/content', { id });
+  }
+
+  /**
    * Health check
    * @returns {Promise<Object>} Health status
    */
