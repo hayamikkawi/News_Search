@@ -318,6 +318,116 @@ function highlightKeywords(text, query) {
   return escaped;
 }
 
+async function summarizeCurrentResults(k = 3) {
+  if (!Array.isArray(_currentResultIds) || _currentResultIds.length === 0) {
+    throw new Error('No search results available to summarize');
+  }
+
+  const ids = _currentResultIds
+    .slice(0, Math.max(1, k))
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id));
+
+  if (ids.length === 0) {
+    throw new Error('No valid article ids found to summarize');
+  }
+
+  return apiService.summarize({
+    query: _currentQuery || '',
+    ids,
+  });
+}
+
+async function openResultSummaryModal(article) {
+  const overlay = document.getElementById('news-detail-overlay');
+  const content = overlay?.querySelector('.bg-white');
+  if (!overlay || !content) return;
+
+  const domain = extractDomain(article.url || '');
+  const displayDate = formatDate(article.time);
+
+  setElementText('detail-category', domain || 'Source');
+  setElementText('detail-title', article.headline || 'Untitled Article');
+  setElementText('detail-date', displayDate || 'Unknown date');
+  setElementText('detail-content', 'Loading article preview...');
+
+  const imageEl = document.getElementById('detail-image');
+  if (imageEl && imageEl.parentElement) {
+    imageEl.parentElement.classList.add('hidden');
+    imageEl.setAttribute('src', '');
+  }
+
+  const tagsEl = document.getElementById('detail-tags');
+  if (tagsEl) {
+    tagsEl.innerHTML = '';
+    tagsEl.classList.add('hidden');
+  }
+
+  const readLink = document.getElementById('detail-read-link');
+  if (readLink) {
+    readLink.setAttribute('href', article.url || '#');
+  }
+
+  overlay.classList.remove('opacity-0', 'pointer-events-none');
+  content.classList.remove('translate-y-8');
+
+  const docId = Number(article.id);
+  if (!Number.isFinite(docId)) {
+    setElementText('detail-content', 'Summary is unavailable for this item.');
+    return;
+  }
+
+  try {
+    const response = await apiService.summarize({
+      query: _currentQuery || '',
+      ids: [docId],
+    });
+    const summaryText = response?.summary || '';
+    if (summaryText.trim()) {
+      setElementText('detail-content', summaryText.trim());
+      return;
+    }
+  } catch (error) {
+    console.error('Failed to load article summary:', error);
+  }
+
+  const fallbackText =
+    article.description ||
+    article.snippet ||
+    article.summary ||
+    'No summary is available for this article yet.';
+  setElementText('detail-content', fallbackText);
+}
+
+function initNewsDetailOverlayHandlers() {
+  const overlay = document.getElementById('news-detail-overlay');
+  const content = overlay?.querySelector('.bg-white');
+  const closeBtn = document.getElementById('close-news-detail');
+  if (!overlay || !content || !closeBtn) return;
+  if (overlay.dataset.boundCloseHandlers) return;
+
+  const close = () => {
+    overlay.classList.add('opacity-0', 'pointer-events-none');
+    content.classList.add('translate-y-8');
+  };
+  closeBtn.addEventListener('click', close);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) close();
+  });
+  overlay.dataset.boundCloseHandlers = '1';
+}
+
+function bindResultSummaryModalHandlers(results) {
+  const buttons = document.querySelectorAll('.result-summary-btn');
+  buttons.forEach((button, idx) => {
+    const article = results[idx];
+    if (!article) return;
+    button.addEventListener('click', async () => {
+      await openResultSummaryModal(article);
+    });
+  });
+}
+
 /**
  * Render search results
  */
@@ -329,17 +439,29 @@ function renderResults(results) {
   }
   
   if (!results || results.length === 0) {
+    _currentResultIds = [];
     resultsContainer.innerHTML = '<div class="text-center py-12 text-slate-500">No results found</div>';
     return;
   }
+
+  _currentResultIds = results
+    .map((article) => Number(article.id))
+    .filter((id) => Number.isFinite(id));
 
   const html = results.map((article, index) => {
     const domain = extractDomain(article.url || '');
     const formattedDate = formatDate(article.time);
     const headline = article.headline || 'Untitled Article';
     const url = article.url || '#';
-    const id = article.id || index;
+    const rawSnippet =
+      article.snippet ||
+      article.summary ||
+      article.description ||
+      article.content ||
+      '';
+    const snippet = truncateText(rawSnippet, 180);
     const highlightedHeadline = highlightKeywords(headline, _currentQuery);
+    const highlightedSnippet = highlightKeywords(snippet, _currentQuery);
     
     return `
       <article class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 group">
@@ -353,18 +475,22 @@ function renderResults(results) {
           </div>
           
           <!-- Title -->
-          <div class="flex items-start justify-between gap-3">
-            <h3 class="text-base font-bold text-slate-900 mb-0 group-hover:text-indigo-600 transition-colors leading-snug flex-1">
-              <a href="${url}" target="_blank" rel="noopener" class="news-title-link">
-                ${highlightedHeadline}
-              </a>
-            </h3>
-            <button
-              class="view-content-btn shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
-              data-id="${id}"
-              type="button"
-            >
-              View Content
+          <h3 class="text-base font-bold text-slate-900 mb-0 group-hover:text-indigo-600 transition-colors leading-snug">
+            <a href="${url}" target="_blank" rel="noopener" class="news-title-link">
+              ${highlightedHeadline}
+            </a>
+          </h3>
+          ${
+            snippet
+              ? `<p class="mt-2 text-sm text-slate-600 leading-relaxed">${highlightedSnippet}</p>`
+              : ''
+          }
+          <p class="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500 break-all">
+            ${escapeHtml(url)}
+          </p>
+          <div class="mt-2 flex justify-end">
+            <button type="button" class="result-summary-btn px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors">
+              View Summary
             </button>
           </div>
         </div>
@@ -373,68 +499,8 @@ function renderResults(results) {
   }).join('');
   
   resultsContainer.innerHTML = html;
-}
-
-function openNewsDetailModal({ title, date, content }) {
-  const newsDetailOverlay = document.getElementById('news-detail-overlay');
-  const newsDetailContent = newsDetailOverlay?.querySelector('.bg-white');
-  if (!newsDetailOverlay || !newsDetailContent) return;
-
-  const categoryEl = document.getElementById('detail-category');
-  if (categoryEl) categoryEl.textContent = 'Article';
-  const titleEl = document.getElementById('detail-title');
-  if (titleEl) titleEl.textContent = title || 'Untitled Article';
-  const dateEl = document.getElementById('detail-date');
-  if (dateEl) dateEl.textContent = date || 'Unknown date';
-  const contentEl = document.getElementById('detail-content');
-  if (contentEl) contentEl.textContent = content || 'No content available.';
-  const imageEl = document.getElementById('detail-image');
-  if (imageEl) imageEl.setAttribute('src', '');
-  const keypointsContainer = document.getElementById('detail-keypoints');
-  if (keypointsContainer) keypointsContainer.innerHTML = '<li>• Full article content loaded from database.</li>';
-
-  const modalScrollContainer = newsDetailOverlay.querySelector('.overflow-y-auto');
-  if (modalScrollContainer) modalScrollContainer.scrollTop = 0;
-
-  newsDetailOverlay.classList.remove('opacity-0', 'pointer-events-none');
-  newsDetailContent.classList.remove('translate-y-8');
-}
-
-function bindArticleContentButtons() {
-  const resultsContainer = document.getElementById('search-results-container');
-  if (!resultsContainer || resultsContainer.dataset.boundContentButtons) return;
-
-  resultsContainer.addEventListener('click', async (e) => {
-    const button = e.target.closest('.view-content-btn');
-    if (!button) return;
-
-    const articleId = button.dataset.id;
-    if (!articleId) return;
-
-    const articleCard = button.closest('article');
-    const titleText = articleCard?.querySelector('.news-title-link')?.textContent?.trim() || 'Untitled Article';
-    const dateText = articleCard?.querySelector('.text-slate-400')?.textContent?.trim() || 'Unknown date';
-    const originalText = button.textContent;
-
-    try {
-      button.disabled = true;
-      button.textContent = 'Loading...';
-      const response = await apiService.getArticleContent(articleId);
-      openNewsDetailModal({
-        title: titleText,
-        date: dateText,
-        content: response.content || 'No content available.',
-      });
-    } catch (error) {
-      console.error('Failed to load article content:', error);
-      showError(error instanceof APIError ? error.message : 'Failed to load article content.');
-    } finally {
-      button.disabled = false;
-      button.textContent = originalText || 'View Content';
-    }
-  });
-
-  resultsContainer.dataset.boundContentButtons = '1';
+  initNewsDetailOverlayHandlers();
+  bindResultSummaryModalHandlers(results);
 }
 
 // ========================================
@@ -446,6 +512,7 @@ let _currentQueryType = 'FreeText';
 let _currentFilters = {};
 let _currentPage = 1;
 let _totalResults = 0;
+let _currentResultIds = [];
 
 /**
  * Get the current search state (query + type). Used by app.js for filter re-runs.
@@ -546,7 +613,7 @@ async function _performSearchInternal(query, queryType, filters = {}) {
     const searchParams = {
       query: query.trim(),
       query_type: queryType,
-      limit: filters.limit || 20,
+      limit: filters.limit || PAGE_SIZE,
       offset: filters.offset || 0,
     };
 
@@ -575,8 +642,12 @@ async function _performSearchInternal(query, queryType, filters = {}) {
 
     // Render results
     if (response.results && response.results.length > 0) {
+      _currentResultIds = response.results
+        .map((article) => Number(article.id))
+        .filter((id) => Number.isFinite(id));
       renderResults(response.results);
     } else {
+      _currentResultIds = [];
       showEmptyResults(query);
     }
 
@@ -633,6 +704,7 @@ function renderHomeFeed(articles) {
   const countEl   = document.getElementById('results-count');
   const pagination = document.getElementById('pagination-container');
   if (!container) return;
+  _currentResultIds = [];
 
   // Expand layout to col-span-9
   setHomeFeedLayout(true);
@@ -754,8 +826,6 @@ function getActiveDateFilter() {
  * Initialize search button handlers with API integration
  */
 function initSearchWithAPI() {
-  bindArticleContentButtons();
-
   // Free text search
   const freetextSearchBtn = document.querySelector('#freetext-search button');
   const searchInput = document.getElementById('search-input');
