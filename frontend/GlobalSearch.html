@@ -5,7 +5,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>GlobalSearch - News Search Engine</title>
+<title>New§earch - News Search Engine</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
@@ -18,7 +18,7 @@
 <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg">
 <span class="iconify w-6 h-6" data-icon="heroicons:globe-alt-20-solid"></span>
 </div>
-<span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 tracking-tight">GlobalSearch</span>
+<span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 tracking-tight">New§earch</span>
 </div>
 
 
@@ -30,19 +30,16 @@
 <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_50%,rgba(99,102,241,0.4),transparent_50%)]"></div>
 </div>
 <div class="relative z-10 max-w-4xl mx-auto text-center space-y-6">
-<div class="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm text-indigo-300 text-xs font-semibold uppercase tracking-widest animate-pulse-soft">
-<span>Search Engine Ready</span>
-</div>
 <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
-          Understand the World</span>
+          The New Way To News</span>
 </h1>
 <!-- Search Mode Toggle -->
 <div class="flex justify-center gap-3 mb-6">
-  <button id="mode-freetext" class="mode-toggle px-6 py-2 rounded-full font-semibold transition-all active" 
+  <button id="mode-freetext" class="mode-toggle inline-flex items-center gap-2 px-6 py-2 rounded-full font-semibold transition-all active"
     style="background-color: white; color: #4f46e5;">
     <span class="iconify" data-icon="heroicons:magnifying-glass"></span> Free Text
   </button>
-  <button id="mode-boolean" class="mode-toggle px-6 py-2 rounded-full font-semibold transition-all" 
+  <button id="mode-boolean" class="mode-toggle inline-flex items-center gap-2 px-6 py-2 rounded-full font-semibold transition-all"
     style="background-color: rgba(255,255,255,0.2); color: white; border: 2px solid rgba(255,255,255,0.3);">
     <span class="iconify" data-icon="heroicons:adjustments-horizontal"></span> Boolean Search
   </button>
@@ -52,10 +49,9 @@
 <div class="relative group">
 <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-violet-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
 <div class="relative flex items-center bg-white rounded-2xl shadow-xl">
-<span class="iconify w-6 h-6 ml-6 text-slate-400" data-icon="heroicons:magnifying-glass"></span>
 <input id="search-input" class="w-full px-6 py-5 outline-none text-lg text-slate-700 bg-transparent placeholder:text-slate-400" placeholder="Enter news keywords" type="text"/>
-<button class="bg-indigo-600 text-white px-8 py-5 font-bold hover:bg-indigo-700 transition-colors flex items-center space-x-2">
-<span>Explore Now</span>
+<button class="pr-5">
+    <span class="iconify w-6 h-6 ml-6 text-slate-400" data-icon="heroicons:magnifying-glass"></span>
 </button>
 </div>
 <!-- Autocomplete Dropdown - Search History -->
@@ -166,54 +162,6 @@ Loading latest news...
 </aside>
 </div>
 </main>
-<!-- Floating Action Button -->
-<div class="fixed bottom-10 right-10 flex flex-col items-center space-y-4">
-<button class="group relative flex items-center justify-center w-16 h-16 bg-indigo-600 text-white rounded-full shadow-2xl hover:scale-110 transition-transform focus:outline-none" id="summary-btn">
-<span class="iconify w-8 h-8" data-icon="heroicons:sparkles-solid"></span>
-<div class="absolute -top-12 right-0 hidden group-hover:block bg-slate-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap">
-        Summarize all viewpoints on this page
-      </div>
-</button>
-</div>
-<!-- Summary Modal (Hidden by default) -->
-<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6 transition-opacity opacity-0 pointer-events-none" id="modal-overlay">
-<div class="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden transform transition-all translate-y-8">
-<div class="p-8 space-y-6">
-<div class="flex justify-between items-center">
-<div class="flex items-center space-x-3">
-<span class="iconify w-8 h-8 text-indigo-600" data-icon="heroicons:view-columns"></span>
-<h2 class="text-2xl font-black text-slate-900">AI Smart Summary Area</h2>
-</div>
-<button class="p-2 text-slate-400 hover:text-slate-900" id="close-modal">
-<span class="iconify w-6 h-6" data-icon="heroicons:x-mark"></span>
-</button>
-</div>
-<div class="w-full h-48 border border-slate-50 rounded-2xl bg-slate-50" id="summary-chart"></div>
-<div class="space-y-4">
-<div class="flex space-x-4">
-<div class="w-1 bg-indigo-500 rounded-full"></div>
-<p class="text-slate-600 leading-relaxed">
-              Based on your current search "2026 Sustainable Energy", GlobalSearch has identified 3 core trends: <b>Strengthened Cross-border Collaboration</b>, <b>Ultra-Low Loss Transmission Technology Breakthrough</b>, and <b>Private Investment Surge Under Policy Guidance</b>.
-            </p>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-<span class="text-[10px] font-bold text-emerald-600 block mb-1">Key Advantages</span>
-<p class="text-xs text-slate-700 font-semibold line-clamp-2">The Nordic superconductor project sets a benchmark for global energy interconnection with high replication value.</p>
-</div>
-<div class="p-4 bg-amber-50 rounded-2xl border border-amber-100">
-<span class="text-[10px] font-bold text-amber-600 block mb-1">Potential Obstacles</span>
-<p class="text-xs text-slate-700 font-semibold line-clamp-2">The high cost of quantum technology proliferation remains a barrier for developing countries.</p>
-</div>
-</div>
-</div>
-<button class="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center space-x-2 active:scale-95 transition-transform">
-<span class="iconify w-5 h-5" data-icon="heroicons:newspaper"></span>
-<span>Export Full Analysis Report (PDF)</span>
-</button>
-</div>
-</div>
-</div>
 <!-- News Detail Modal -->
 <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-6 transition-opacity opacity-0 pointer-events-none" id="news-detail-overlay">
 <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl overflow-hidden transform transition-all translate-y-8">
@@ -225,21 +173,11 @@ Loading latest news...
 <h1 class="text-3xl font-black text-slate-900 mt-3 leading-tight" id="detail-title">News Title</h1>
 <div class="flex items-center space-x-4 mt-3 text-sm text-slate-500">
 <span id="detail-date">Date</span>
-<span>•</span>
-<span class="flex items-center">
-<span class="iconify w-4 h-4 mr-1" data-icon="heroicons:clock"></span>
-5 min read
-</span>
 </div>
 </div>
 <button class="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" id="close-news-detail">
 <span class="iconify w-6 h-6" data-icon="heroicons:x-mark"></span>
 </button>
-</div>
-
-<!-- Featured Image -->
-<div class="w-full h-64 bg-slate-100 overflow-hidden">
-<img class="w-full h-full object-cover" id="detail-image" src="" alt="News Image"/>
 </div>
 
 <!-- Content -->
@@ -249,17 +187,6 @@ Loading latest news...
 <p class="text-lg text-slate-700 leading-relaxed" id="detail-content">
 Article content will be displayed here...
 </p>
-</div>
-
-<!-- Key Points -->
-<div class="bg-indigo-50 border-l-4 border-indigo-500 p-6 rounded-r-xl space-y-3">
-<h3 class="font-bold text-indigo-900 flex items-center">
-<span class="iconify w-5 h-5 mr-2" data-icon="heroicons:light-bulb"></span>
-Key Takeaways
-</h3>
-<ul class="space-y-2 text-sm text-slate-700" id="detail-keypoints">
-<li>• Key point will be displayed here</li>
-</ul>
 </div>
 
 <!-- Tags -->
