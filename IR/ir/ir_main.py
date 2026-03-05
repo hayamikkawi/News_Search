@@ -23,6 +23,9 @@ class IRMain:
         self.__load_index(index_filepath)
         self.__load_doc_stats(doc_stat_filepath)
 
+    def close_index(self):
+        self.index.close()
+
     def __load_index(self, index_filepath):
         logging.info("Started loading index")
         self.index = InvertedIndex.from_binary_file(index_filepath)
