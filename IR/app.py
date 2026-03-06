@@ -1,29 +1,34 @@
 from __future__ import annotations
+
+import asyncio
+import logging
+import os
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
-import os
-import asyncio
-from fastapi import FastAPI, Query, HTTPException
+
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+
+from common_utils.types import DocID
 from IR.helpers.doc_store import DocStore
 from IR.ir.ir_main import IRMain, QueryType
-from common_utils.types import DocID
-from dotenv import load_dotenv
-from fastapi.middleware.cors import CORSMiddleware
-import logging
 from IR.routers.summarizer import router as summarize_router
 
 logger = logging.getLogger("search")
 logging.basicConfig(level=logging.INFO)
 load_dotenv()
 
+
 @dataclass(frozen=True)
 class SearchResult:
     ids: List[DocID]
-    total: int               
+    total: int
     index_version: str
+
 
 # -------------------------
 # GLOBALS
@@ -33,6 +38,7 @@ ORIGINS = [os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")]
 # -------------------------
 # STARTUP
 # -------------------------
+
 
 def load_engine_from_version(base_dir: str, version: str) -> IRMain:
     vdir = Path(base_dir) / version
@@ -48,23 +54,22 @@ async def relaod_loop(app, every_seconds: int = 7200):
     logging.info("relaod_loop called")
     base_dir = app.state.index_base_dir
     latest_file = Path(base_dir) / "LATEST.txt"
-    while not app.state.stop_event.is_set(): 
+    while not app.state.stop_event.is_set():
         logging.info("relaod_loop inside while loop")
         try:
-            if latest_file.exists(): 
+            if latest_file.exists():
                 latest_version = latest_file.read_text(encoding="utf-8").strip()
                 logging.info(f"Latest version is: {latest_version}")
-            if latest_version and latest_version != app.state.index_version: 
+            if latest_version and latest_version != app.state.index_version:
                 logger.info("Reloading index to %s", latest_version)
                 new_engine = load_engine_from_version(base_dir, latest_version)
                 app.state.engine = new_engine
                 app.state.index_version = latest_version
                 logger.info("Index switched to %s", latest_version)
-        except Exception as e: 
+        except Exception as e:
             logger.exception("Index reload failed (keeping current index)")
         await asyncio.sleep(every_seconds)
 
-    
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -76,7 +81,7 @@ async def lifespan(app: FastAPI):
     app.state.docs_stat_filename = os.environ.get("DOCS_STAT_FILENAME", "documents_stats.json")
     app.state.index_version = "boot"
     # datastore
-    app.state.store = DocStore() 
+    app.state.store = DocStore()
     # Load the index from latest version
     latest = (Path(app.state.index_base_dir) / "LATEST.txt").read_text().strip()
     print(f"latest: {latest}")
@@ -89,7 +94,9 @@ async def lifespan(app: FastAPI):
     # shutdown
     app.state.stop_event.set()
     app.state.reload_task.cancel()
+    app.state.engine.close_index()
     print("Shutting down search service")
+
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
@@ -104,6 +111,7 @@ app.include_router(summarize_router)
 # -------------------------
 # ENDPOINTS
 # -------------------------
+
 
 @app.get("/health")
 def health():
@@ -138,13 +146,15 @@ def search(
     if not engine or not store:
         logger.exception("Service not ready")
         raise HTTPException(status_code=503, detail="Service not ready")
-    if len(query) <= 0 or offset < 0: 
+    if len(query) <= 0 or offset < 0:
         raise HTTPException(status_code=503, detail="Bad request")
-    logger.info(f"""query: {query}\n query type: {query_type}\n limit: {limit}, offset:{offset}, time from: {time_from}, time to: {time_to}""")
+    logger.info(
+        f"""query: {query}\n query type: {query_type}\n limit: {limit}, offset:{offset}, time from: {time_from}, time to: {time_to}"""
+    )
     # Snapshot the engine for consistency during reloads
     engine_snapshot = engine
     store_snapshot = store
-    try: 
+    try:
         # pre-filter candidates by time
         candidate_ids = store_snapshot.fetch_candidate_ids_by_time(time_from, time_to)
 
@@ -176,34 +186,17 @@ def search(
 
 
 @app.get("/news/latest")
-def latest(limit: int = Query(10, ge=1, le=50),):
+def latest(
+    limit: int = Query(10, ge=1, le=50),
+):
     store = app.state.store
     if not store:
         logger.exception("Service not ready")
         raise HTTPException(status_code=503, detail="Service not ready")
-    
+
     try:
         docs = store.fetch_latest(limit)
         return {"results": docs}
-    except Exception as e: 
+    except Exception as e:
         logger.exception(f"Fetching latest news failed, {e}")
         raise HTTPException(status_code=500, detail="Internal search error")
-
-
-@app.get("/article/content")
-def article_content(id: int = Query(..., ge=1)):
-    store = app.state.store
-    if not store:
-        logger.exception("Service not ready")
-        raise HTTPException(status_code=503, detail="Service not ready")
-
-    try:
-        row = store.fetch_content_by_id(id)
-    except Exception as e:
-        logger.exception(f"Fetching article content failed, {e}")
-        raise HTTPException(status_code=500, detail="Internal search error")
-
-    if not row:
-        raise HTTPException(status_code=404, detail="Article not found")
-
-    return row
