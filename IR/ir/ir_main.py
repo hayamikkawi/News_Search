@@ -3,8 +3,8 @@ import logging
 from enum import Enum
 from typing import Iterable, Optional
 
-from common_utils.index import InvertedIndex
-from common_utils.types import DocID, DocumentsStat
+from common_utils.src.common_utils.index import InvertedIndex
+from common_utils.src.common_utils.types import DocID, DocumentsStat
 from IR.ir.boolean_query_handler import BooleanQueryHandler
 from IR.ir.free_text_query_handler import FreeTextQueryHandler
 from IR.ir.query_handler import QueryHandler
@@ -22,6 +22,9 @@ class IRMain:
     def __init__(self, index_filepath: str, doc_stat_filepath: str):
         self.__load_index(index_filepath)
         self.__load_doc_stats(doc_stat_filepath)
+
+    def close_index(self):
+        self.index.close()
 
     def __load_index(self, index_filepath):
         logging.info("Started loading index")

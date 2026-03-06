@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import mmap
+from io import BufferedRandom
 
 from .ir_serializer import query_mmapped_index
 from .types import Posting, Token
@@ -9,14 +10,21 @@ from .types import Posting, Token
 class InvertedIndex(dict[Token, Posting]):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._index_mmap = None
+        self._index_file: BufferedRandom | None = None
+        self._index_mmap: mmap.mmap | None = None
 
     @classmethod
     def from_binary_file(cls, binary_path: str) -> InvertedIndex:
         instance = cls()
-        index_file = open(binary_path, "rb+")
-        instance._index_mmap = mmap.mmap(index_file.fileno(), 0)
+        instance._index_file = open(binary_path, "rb+")
+        instance._index_mmap = mmap.mmap(instance._index_file.fileno(), 0)
         return instance
+
+    def close(self):
+        if self._index_mmap is not None:
+            self._index_mmap.close()
+        if self._index_file is not None:
+            self._index_file.close()
 
     def __getitem__(self, key: str) -> Posting:
         if self._index_mmap:
