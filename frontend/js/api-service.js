@@ -7,7 +7,7 @@
 const API_CONFIG = {
   // Base URL - points to backend server
   baseURL: '/api',
-  timeout: 30000, // 30 seconds
+  timeout: 60000, // 60 seconds
   retries: 2,
   retryBaseDelayMs: 500,
 };
@@ -188,6 +188,15 @@ class APIService {
    */
   async getLatestNews(limit = 10) {
     return this.client.get('/news/latest', { limit });
+  }
+
+  /**
+   * Get full content for a specific article
+   * @param {number|string} id - Article ID
+   * @returns {Promise<Object>} Article content payload
+   */
+  async getArticleContent(id) {
+    return this.client.get('/article/content', { id });
   }
 
   /**

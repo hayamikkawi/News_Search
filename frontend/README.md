@@ -1,138 +1,126 @@
 # GlobalSearch Frontend
 
-Sentiment-aware news search engine frontend interface
+Frontend for the TTDS news search engine.
 
-## 📁 Project Structure
+## Overview
 
-```
+This frontend provides:
+
+- Free text search and boolean search builder
+- Date filtering and search pagination
+- Search history (stored in browser `localStorage`)
+- Latest news home feed
+- Article detail modal (`View Content`)
+- Article summary modal (`View Summary`)
+- `AI Smart Summary Area` (summarizes top 3 current search results)
+
+## Project Structure
+
+```text
 frontend/
-├── GlobalSearch.html       # Main HTML file
+├── GlobalSearch.html          # Main search page
+├── LatestNews.html            # Latest news page
 ├── css/
-│   └── styles.css         # Custom styles
+│   └── styles.css             # Custom styles
 ├── js/
-│   └── app.js             # Application JavaScript logic
-└── README.md              # Project documentation
+│   ├── app.js                 # UI behavior, modals, filters, boolean builder
+│   ├── api-integration.js     # Search flow, rendering, pagination, modal data binding
+│   └── api-service.js         # HTTP client and API methods
+├── nginx.conf                 # Nginx config used by UI container
+├── DEPLOYMENT.md              # Deployment notes
+└── README.md
 ```
 
-## 🎯 Architecture Overview
+## Runtime Flow
 
-### Code Separation Benefits
+1. Browser loads `GlobalSearch.html`.
+2. `js/api-service.js` calls backend through relative `/api/*` routes.
+3. Nginx proxies `/api/` to backend service (configured in `frontend/nginx.conf`).
+4. `js/api-integration.js` renders results and binds per-result actions.
+5. `js/app.js` handles top-level UI interactions (summary modal, filters, modes).
 
-The project has completely separated HTML, CSS, and JavaScript code:
+## API Endpoints Used
 
-1. **HTML** (`GlobalSearch.html`) - Only responsible for page structure and content
-2. **CSS** (`css/styles.css`) - All custom styles
-3. **JavaScript** (`js/app.js`) - All interaction logic and functionality
+- `GET /api/search`
+- `GET /api/news/latest`
+- `GET /api/article/content`
+- `POST /api/summarize`
 
-### Main Feature Modules
+Expected summary payload:
 
-`js/app.js` contains the following modular features:
-
-#### 1. Modal Management
-- `initSummaryModal()` - AI smart summary modal
-- `initNewsDetailModal()` - News detail modal
-
-#### 2. Chart Visualization
-- `initMiniChart()` - Sidebar mini chart
-- `initModalChart()` - Modal radar chart
-
-#### 3. Filter Functionality
-- `initDateFilter()` - Date range filter
-- `initSentimentFilter()` - Sentiment filter
-- `initApplyFilters()` - Apply all filters
-
-#### 4. Search Modes
-- `initSearchModeToggle()` - Toggle between free text/boolean search
-- `initBooleanSearch()` - Boolean search builder
-- `createRuleRow()` - Create search rules
-- `updateQueryPreview()` - Real-time query preview
-
-## 🚀 Local Development
-
-### Quick Start Scripts
-
-Two PowerShell scripts are provided in the `frontend/` directory for easy local development:
-
-#### 1. Start Backend Server
-
-Run this script first to start the FastAPI backend:
-
-```powershell
-.\start-backend.ps1
+```json
+{
+  "summary": "...",
+  "sources": [123, 456, 789]
+}
 ```
 
-This will:
-- Configure Python path (`PYTHONPATH`)
-- Check `.env` configuration
-- Start backend at `http://localhost:8000`
+## AI Smart Summary Area
 
-#### 2. Start Frontend Server
+`AI Smart Summary Area` works on the current search results only:
 
-In a **new PowerShell window**, run:
+- It takes the top 3 IDs from the current search page
+- Calls `POST /api/summarize`
+- Renders summary text in `#summary-output`
+- Renders source count in `#summary-meta`
 
-```powershell
-.\start-frontend.ps1
+Notes:
+
+- If no search has been run yet, summary cannot be generated.
+- Summary requests may be slow; frontend timeout is currently `60000ms` in `js/api-service.js`.
+
+## Local Development
+
+### Option A: Run with project Docker Compose (recommended)
+
+From project root:
+
+```bash
+cd /opt/ttds-project
+docker compose up -d ttds-ui ttds-ir
 ```
 
-This will:
-- Start HTTP server at `http://localhost:3000`
-- Serve the frontend application
+Then open:
 
-#### 3. Access the Application
+- `http://localhost/GlobalSearch.html`
 
-Open your browser and visit:
-```
-http://localhost:3000/GlobalSearch.html
-```
+### Option B: Serve frontend only (backend must already exist)
 
-### Manual Start (Alternative)
+From this directory:
 
-If you prefer manual commands:
-
-**Backend (Terminal 1):**
-```powershell
-cd d:\web-searcher\IR
-$env:PYTHONPATH="d:\web-searcher"
-python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```bash
+cd /opt/ttds-project/frontend
+python3 -m http.server 3000
 ```
 
-**Frontend (Terminal 2):**
-```powershell
-cd d:\web-searcher\frontend
-python -m http.server 3000
+Then open:
+
+- `http://localhost:3000/GlobalSearch.html`
+
+If you use Option B, make sure your backend and proxy/CORS settings allow `/api/*` calls from that origin.
+
+## Troubleshooting
+
+### AI Smart Summary Area shows no result
+
+Check in order:
+
+1. You performed a search first (there are result IDs).
+2. Backend `POST /api/summarize` is reachable.
+3. Browser console has no timeout/network error.
+4. `GlobalSearch.html` includes `#summary-output` and `#summary-meta`.
+
+### Page updates not reflected
+
+If HTML changes are not visible while using Docker bind mounts:
+
+```bash
+cd /opt/ttds-project
+docker compose up -d --force-recreate ttds-ui
 ```
 
-### Verify Services
+Then hard refresh browser (`Ctrl+F5`).
 
-Test backend API:
-```powershell
-# Health check
-Invoke-RestMethod "http://localhost:8000/health"
+## Related Docs
 
-# Get latest news
-Invoke-RestMethod "http://localhost:8000/news/latest?limit=5"
-
-# Search test
-Invoke-RestMethod "http://localhost:8000/search?query=news&query_type=FreeText&limit=10"
-```
-
-### Configuration
-
-Backend configuration is in `d:\web-searcher\.env`:
-```dotenv
-DB_HOST=34.39.58.249
-DB_PORT=3306
-DB_USER=ttds_app
-DB_PASSWORD=ttds#123
-DB_NAME=ttds_search_engine
-INDEX_BASE_DIR=d:/web-searcher/indexer/output
-FRONTEND_ORIGIN=http://localhost:3000
-```
-
----
-
-For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
-
-#### 5. Utility Functions
-- `setElementText()` - Safely set element text
-- `setElementAttribute()` - Safely set element attributes
+- See [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment-specific setup.

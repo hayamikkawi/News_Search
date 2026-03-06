@@ -349,7 +349,7 @@ async function openResultSummaryModal(article) {
   setElementText('detail-category', domain || 'Source');
   setElementText('detail-title', article.headline || 'Untitled Article');
   setElementText('detail-date', displayDate || 'Unknown date');
-  setElementText('detail-content', 'Loading article preview...');
+  setElementText('detail-content', 'Loading article summary...');
 
   const imageEl = document.getElementById('detail-image');
   if (imageEl && imageEl.parentElement) {
@@ -399,6 +399,65 @@ async function openResultSummaryModal(article) {
   setElementText('detail-content', fallbackText);
 }
 
+async function openResultContentModal(article) {
+  const overlay = document.getElementById('news-detail-overlay');
+  const content = overlay?.querySelector('.bg-white');
+  if (!overlay || !content) return;
+
+  const domain = extractDomain(article.url || '');
+  const displayDate = formatDate(article.time);
+
+  setElementText('detail-category', domain || 'Source');
+  setElementText('detail-title', article.headline || 'Untitled Article');
+  setElementText('detail-date', displayDate || 'Unknown date');
+  setElementText('detail-content', 'Loading article content...');
+
+  const imageEl = document.getElementById('detail-image');
+  if (imageEl && imageEl.parentElement) {
+    imageEl.parentElement.classList.add('hidden');
+    imageEl.setAttribute('src', '');
+  }
+
+  const tagsEl = document.getElementById('detail-tags');
+  if (tagsEl) {
+    tagsEl.innerHTML = '';
+    tagsEl.classList.add('hidden');
+  }
+
+  const readLink = document.getElementById('detail-read-link');
+  if (readLink) {
+    readLink.setAttribute('href', article.url || '#');
+  }
+
+  overlay.classList.remove('opacity-0', 'pointer-events-none');
+  content.classList.remove('translate-y-8');
+
+  const docId = Number(article.id);
+  if (!Number.isFinite(docId)) {
+    setElementText('detail-content', 'Article content is unavailable for this item.');
+    return;
+  }
+
+  try {
+    const response = await apiService.getArticleContent(docId);
+    const contentText = response?.content || '';
+    if (contentText.trim()) {
+      setElementText('detail-content', contentText.trim());
+      return;
+    }
+  } catch (error) {
+    console.error('Failed to load article content:', error);
+  }
+
+  const fallbackText =
+    article.content ||
+    article.description ||
+    article.snippet ||
+    article.summary ||
+    'No content is available for this article yet.';
+  setElementText('detail-content', fallbackText);
+}
+
 function initNewsDetailOverlayHandlers() {
   const overlay = document.getElementById('news-detail-overlay');
   const content = overlay?.querySelector('.bg-white');
@@ -418,12 +477,21 @@ function initNewsDetailOverlayHandlers() {
 }
 
 function bindResultSummaryModalHandlers(results) {
-  const buttons = document.querySelectorAll('.result-summary-btn');
-  buttons.forEach((button, idx) => {
+  const summaryButtons = document.querySelectorAll('.result-summary-btn');
+  summaryButtons.forEach((button, idx) => {
     const article = results[idx];
     if (!article) return;
     button.addEventListener('click', async () => {
       await openResultSummaryModal(article);
+    });
+  });
+
+  const contentButtons = document.querySelectorAll('.result-content-btn');
+  contentButtons.forEach((button, idx) => {
+    const article = results[idx];
+    if (!article) return;
+    button.addEventListener('click', async () => {
+      await openResultContentModal(article);
     });
   });
 }
@@ -489,7 +557,10 @@ function renderResults(results) {
             ${escapeHtml(url)}
           </p>
           <div class="mt-2 flex justify-end">
-            <button type="button" class="result-summary-btn px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors">
+            <button type="button" class="result-content-btn px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors">
+              View Content
+            </button>
+            <button type="button" class="result-summary-btn ml-2 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg hover:bg-emerald-100 transition-colors">
               View Summary
             </button>
           </div>
