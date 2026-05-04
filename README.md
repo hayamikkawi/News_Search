@@ -18,13 +18,13 @@ Our solution solves these issues by creating and maintaining a searchable catalo
 from RSS feeds and pre-archived links to older pages which consists of more than 150K articles. Each article
 has an average of 2000 characters.
 # Features:
-• Dynamic data collecting and indexing using RSS feeds.
-• Pre-archived data indexing of more than 150K articles.
-• Index optimization with v-byte encoding, delta-encoding and memory mapping to enhance memory
+1. Dynamic data collecting and indexing using RSS feeds.
+2. Pre-archived data indexing of more than 150K articles.
+3. Index optimization with v-byte encoding, delta-encoding and memory mapping to enhance memory
 and time complexity.
-• BM25 information retrieval model implemented from scratch.
-• Boolean queries support with unlimited number of boolean operations, including: AND, OR, AND
+4. BM25 information retrieval model implemented from scratch.
+5. Boolean queries support with unlimited number of boolean operations, including: AND, OR, AND
 NOT, OR NOT, phrase, and proximity search.
-• Filtration based on date.
-• NLP summary for each result and for the top three results.
-• Live Breaking News refreshed every 5 minutes.
+6. Filtration based on date.
+7. NLP summary for each result and for the top three results.
+8. Live Breaking News refreshed every 5 minutes.
